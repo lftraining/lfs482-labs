@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: manual
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend-app
+          image: frontend-app:v1
+          ports:
+            - containerPort: 8443
+          volumeMounts:
+            - mountPath: "/certs"
+              name: frontend
+              readOnly: true
+      volumes:
+        - name: frontend
+          secret:
+            secretName: frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: manual
+  annotations:
+    projectcontour.io/upstream-protocol.tls: "443"
+spec:
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 443
+      targetPort: 8443

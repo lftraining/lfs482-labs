@@ -1,0 +1,15 @@
+{
+  "CN": "CostalContainers Root CA",
+  "key": {
+    "algo": "rsa",
+    "size": 4096
+  },
+  "names": [
+    {
+      "C": "UK",
+      "L": "London",
+      "O": "CostalContainers",
+      "OU": "CostalContainers Root CA"
+    }
+  ]
+}

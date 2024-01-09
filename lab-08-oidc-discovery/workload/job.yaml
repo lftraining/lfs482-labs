@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: workload
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: workload
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: workload
+      containers:
+        - name: agent
+          image: workload
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SPIFFE_ENDPOINT_SOCKET
+              value: unix:///spiffe-workload-api/spire-agent.sock
+          volumeMounts:
+            - name: spiffe-workload-api
+              mountPath: /spiffe-workload-api
+              readOnly: true
+      volumes:
+        - name: spiffe-workload-api
+          csi:
+            driver: "csi.spiffe.io"
+            readOnly: true

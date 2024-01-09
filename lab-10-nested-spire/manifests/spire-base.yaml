@@ -1,0 +1,98 @@
+# Namespace: Defines the Kubernetes namespace spire where all the SPIRE Server components will be deployed.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: spire
+---
+# ServiceAccount: Creates a service account named spire-server in the spire namespace, which the SPIRE Server will use to interact with Kubernetes APIs.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: spire-server
+  namespace: spire
+---
+# Role: Defines a role that allows the patching, getting, and listing of configmaps within the spire namespace.
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: spire-server-configmap-role
+  namespace: spire
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["patch", "get", "list"]
+---
+# RoleBinding: Binds the above role to the spire-server service account.
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: spire-server-configmap-role-binding
+  namespace: spire
+subjects:
+  - kind: ServiceAccount
+    name: spire-server
+    namespace: spire
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: spire-server-configmap-role
+---
+# ClusterRole: Allows the spire-server to create token reviews (via the Token Review API) for node attestation.
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: spire-server-trust-role
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "nodes"]
+    verbs: ["get"]
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["tokenreviews"]
+    verbs: ["create"]
+---
+# ClusterRoleBinding: Binds the above cluster role to the spire-server service account.
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: spire-server-trust-role-binding
+subjects:
+  - kind: ServiceAccount
+    name: spire-server
+    namespace: spire
+roleRef:
+  kind: ClusterRole
+  name: spire-server-trust-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# ServiceAccount: Creates a service account named spire-agent in the spire namespace, used by the SPIRE Agent to interact with Kubernetes APIs.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: spire-agent
+  namespace: spire
+---
+# ClusterRole: Grants the SPIRE Agent permission to query certain Kubernetes resources like pods, nodes, and nodes/proxy.
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: spire-agent-cluster-role
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "nodes", "nodes/proxy"]
+    verbs: ["get"]
+---
+# ClusterRoleBinding: Binds the above cluster role to the spire-agent service account.
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: spire-agent-cluster-role-binding
+subjects:
+  - kind: ServiceAccount
+    name: spire-agent
+    namespace: spire
+roleRef:
+  kind: ClusterRole
+  name: spire-agent-cluster-role
+  apiGroup: rbac.authorization.k8s.io
+---
+

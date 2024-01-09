@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server
+  labels:
+    app: server
+spec:
+  selector:
+    matchLabels:
+      app: server
+  template:
+    metadata:
+      labels:
+        app: server
+    spec:
+      containers:
+        - name: envoy
+          image: envoyproxy/envoy:v1.27.0
+          imagePullPolicy: Always
+          args:
+            - "envoy"
+            - "--config-path"
+            - "/config/envoy.yaml"
+          ports:
+            - containerPort: 8081
+          volumeMounts:
+            - name: proxy-config
+              mountPath: /config
+              readOnly: true
+            - name: spire-agent-socket
+              mountPath: /spire-agent-socket
+              readOnly: true
+          env:
+            - name: SPIFFE_ENDPOINT_SOCKET
+              value: unix:///spire-agent-socket/agent.sock
+        - name: server
+          imagePullPolicy: IfNotPresent
+          image: workload/server:latest
+          ports:
+            - containerPort: 8080
+        - name: opa
+          image: openpolicyagent/opa:0.57.0-envoy
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: opa-envoy
+              containerPort: 8182
+            - name: opa-api-port
+              containerPort: 8181
+              protocol: TCP
+          args:
+            - "run"
+            - "--server"
+            - "--config-file=/run/opa/opa-config.yaml"
+            - "/run/opa/opa-policy.rego"
+          volumeMounts:
+            - name: opa-config
+              mountPath: /run/opa
+              readOnly: true
+      volumes:
+        - name: proxy-config
+          configMap:
+            name: server-envoy
+        - name: opa-config
+          configMap:
+            name: opa-policy
+        - name: spire-agent-socket
+          csi:
+            driver: "csi.spiffe.io"
+            readOnly: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: server
+spec:
+  selector:
+    app: server
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8081

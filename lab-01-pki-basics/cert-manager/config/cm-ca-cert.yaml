@@ -1,0 +1,21 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cm-ca
+  namespace: cm
+spec:
+  isCA: true
+  commonName: cm-ca
+  subject:
+    organizations:
+      - CostalContainers
+    organizationalUnits:
+      - CM CA
+  secretName: cm-ca-secret
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: self-signed-issuer
+    kind: Issuer
+    group: cert-manager.io

@@ -1,0 +1,59 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: frontend
+  namespace: cm
+spec:
+  secretName: frontend
+  isCA: false
+  usages:
+    - server auth
+    - client auth
+    - signing
+    - digital signature
+    - key encipherment
+  dnsNames:
+    - "frontend.default.svc.cluster.local"
+    - "frontend"
+  issuerRef:
+    name: ca-issuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: backend
+  namespace: cm
+spec:
+  secretName: backend
+  isCA: false
+  usages:
+    - server auth
+    - client auth
+    - signing
+    - digital signature
+    - key encipherment
+  dnsNames:
+    - "backend.default.svc.cluster.local"
+    - "backend"
+  issuerRef:
+    name: ca-issuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ingress
+  namespace: cm
+spec:
+  secretName: ingress
+  isCA: false
+  usages:
+    - server auth
+    - client auth
+    - signing
+    - digital signature
+    - key encipherment
+  dnsNames:
+    - "costal-containers.example"
+    - "localhost"
+  issuerRef:
+    name: ca-issuer

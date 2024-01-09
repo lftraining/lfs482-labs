@@ -1,0 +1,22 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-policy
+spec:
+  endpointSelector:
+    matchLabels:
+      k8s:io.cilium.k8s.policy.serviceaccount: client
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.cilium.k8s.policy.serviceaccount: server
+      authentication:
+        mode: required
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
+          rules:
+            http:
+              - method: GET
+                path: /

@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: server
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server
+spec:
+  selector:
+    matchLabels:
+      app: server
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: server
+    spec:
+      serviceAccountName: server
+      initContainers:
+        - name: agent
+          image: ghcr.io/spiffe/spire-agent:1.8.0
+          command: ["/opt/spire/bin/spire-agent", "api", "fetch", "x509", "-write", "/tmp/svids", "-socketPath", "/spire-agent-socket/agent.sock"]
+          volumeMounts:
+            - name: spire-agent-socket
+              mountPath: /spire-agent-socket
+              readOnly: true
+            - name: svids
+              mountPath: /tmp/svids
+      containers:
+        - name: server
+          ports:
+            - name: http
+              containerPort: 9443
+              hostPort: 9443
+          image: server:latest
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: svids
+              mountPath: /var/run/secrets/svids
+          env:
+            - name: PORT
+              value: "9443"
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+            requests:
+              cpu: "500m"
+              memory: "256Mi"
+      volumes:
+        - name: spire-agent-socket
+          csi:
+            driver: "csi.spiffe.io"
+            readOnly: true
+        - name: svids
+          emptyDir: {}

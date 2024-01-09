@@ -1,0 +1,149 @@
+global:
+  telemetry:
+    prometheus:
+      enabled: true
+      podMonitor:
+        enabled: true
+        namespace: "default"
+        labels: {}
+  spire:
+    clusterName: kind-kind
+    trustDomain: coastal-containers.example
+    strictMode: true
+spire-server:
+  image:
+    registry: ghcr.io
+    repository: spiffe/spire-server
+    pullPolicy: IfNotPresent
+    version: "1.7.2"
+  namespaceOverride: "spire-server"
+  replicaCount: 3
+  nodeAttestor:
+    k8sPsat:
+      serviceAccountAllowList: ["spire-system:spire-agent"]
+  notifier:
+    k8sbundle:
+      namespace: spire-system
+  ca_subject:
+    country: UK
+    organization: Coastal Containers Ltd.
+    common_name: coastal-containers.example
+  dataStore:
+    sql:
+      databaseType: postgres
+      databaseName: spire
+      host: spire-db
+      port: 5432
+      username: spire
+      password: coastal-containers
+      options:
+        - sslmode: disable
+  podSecurityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: [ALL]
+    seccompProfile:
+      type: RuntimeDefault
+  tornjak:
+    enabled: true
+  priorityClassName: system-cluster-critical
+  logLevel: info
+  controllerManager:
+    securityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop: [ALL]
+      seccompProfile:
+        type: RuntimeDefault
+    ignoreNamespaces:
+      - kube-system
+      - kube-public
+      - local-path-storage
+spiffe-csi-driver:
+  enabled: true
+  namespaceOverride: spire-system
+  priorityClassName: system-node-critical
+upstream-spiffe-csi-driver:
+  namespaceOverride: spire-system
+  priorityClassName: system-node-critical
+spire-agent:
+  enabled: true
+  image:
+    registry: ghcr.io
+    repository: spiffe/spire-agent
+    pullPolicy: IfNotPresent
+    version: "1.7.2"
+  namespaceOverride: spire-system
+  serviceAccount:
+    name: spire-agent
+  server:
+    namespaceOverride: spire-server
+  priorityClassName: system-node-critical
+  podSecurityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: [ALL]
+    seccompProfile:
+      type: RuntimeDefault
+  logLevel: info
+upstream-spire-agent:
+  namespaceOverride: spire-system
+  priorityClassName: system-node-critical
+  podSecurityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: [ALL]
+    seccompProfile:
+      type: RuntimeDefault
+  logLevel: info
+spiffe-oidc-discovery-provider:
+  enabled: false
+tornjak-frontend:
+  enabled: true
+  nodeSelector: {}
+  namespaceOverride: spire-server
+  service:
+    type: ClusterIP
+    port: 3000
+  apiServerURL: "http://localhost:10000/"
+  podSecurityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop: [ALL]
+    seccompProfile:
+      type: RuntimeDefault
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 512Mi

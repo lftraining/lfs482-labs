@@ -1,0 +1,29 @@
+{
+    "roles": {
+        "fleet_supervisor": {
+            "role_id": 1,
+            "vessels": []
+        },
+        "ship_captain": {
+            "role_id": 2,
+            "vessels": ["maritime-mover"]
+        }
+    },
+    "vessels": {
+        "maritime-mover": {
+            "vessel_id": 1,
+            "cargo_type": "containers",
+            "maintenance": false
+        },
+        "tidal-transporter": {
+            "vessel_id": 2,
+            "cargo_type": "bulk",
+            "maintenance": false
+        },
+        "cargo-clipper": {
+            "vessel_id": 3,
+            "cargo_type": "general",
+            "maintenance": true
+        }
+    }
+}

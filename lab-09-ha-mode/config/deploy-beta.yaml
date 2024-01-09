@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fleet-beta
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fleet-beta
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: fleet-beta
+  template:
+    metadata:
+      labels:
+        app: fleet-beta
+    spec:
+      serviceAccountName: fleet-beta
+      containers:
+        - name: fleet-bet
+          image: workload:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SPIFFE_ENDPOINT_SOCKET
+              value: unix:///spiffe-workload-api/spire-agent.sock
+          volumeMounts:
+            - name: spiffe-workload-api
+              mountPath: /spiffe-workload-api
+              readOnly: true
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+            requests:
+              cpu: "0.5"
+              memory: "256Mi"
+      volumes:
+        - name: spiffe-workload-api
+          csi:
+            driver: "csi.spiffe.io"
+            readOnly: true

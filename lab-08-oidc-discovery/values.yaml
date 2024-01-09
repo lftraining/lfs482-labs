@@ -1,0 +1,32 @@
+global:
+  spire:
+    clusterName: good-ship-lollipop
+    jwtIssuer: 127.0.0.1.nip.io
+    trustDomain: coastal-containers.io
+spire-server:
+  ca_subject:
+    country: UK
+    organization: Coastal Containers Ltd
+    common_name: coastal-containers.io
+  controllerManager:
+    enabled: true
+  defaultJwtSvidTTL: 15m
+spiffe-oidc-discovery-provider:
+  enabled: true
+  insecureScheme:
+    enabled: true
+  ingress:
+    enabled: true
+    className: contour
+    annotations:
+      cert-manager.io/cluster-issuer: selfsigned-cluster-issuer
+      ingress.kubernetes.io/force-ssl-redirect: "true"
+    hosts:
+      - host: 127.0.0.1.nip.io
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: oidc-discovery
+        hosts:
+          - 127.0.0.1.nip.io

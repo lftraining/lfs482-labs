@@ -1,0 +1,18 @@
+{
+  "CN": "CostalContainers Intermediate CA",
+  "key": {
+    "algo": "rsa",
+    "size": 4096
+  },
+  "names": [
+    {
+      "C": "UK",
+      "L": "London",
+      "O": "CostalContainers",
+      "OU": "CostalContainers Intermediate CA"
+    }
+  ],
+  "ca": {
+    "expiry": "42720h"
+  }
+}

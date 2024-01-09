@@ -1,0 +1,117 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spire-root-agent
+  namespace: spire
+  labels:
+    app: spire-root-agent
+spec:
+  selector:
+    matchLabels:
+      app: spire-root-agent
+  template:
+    metadata:
+      namespace: spire
+      labels:
+        app: spire-root-agent
+    spec:
+      hostPID: true
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      serviceAccountName: spire-agent
+      initContainers:
+        - name: init
+          # This is a small image with wait-for-it, choose whatever image
+          # you prefer that waits for a service to be up. This image is built
+          # from https://github.com/lqhl/wait-for-it
+          image: cgr.dev/chainguard/wait-for-it:latest
+          args: ["-t", "30", "coastal-containers-control-plane:8081"]
+      containers:
+        - name: spire-root-agent
+          image: ghcr.io/spiffe/spire-agent:1.8.0
+          args: ["-expandEnv", "-config", "/run/spire/config/agent.conf"]
+          env:
+            - name: MY_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: JOIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: spire-root-join-token
+                  key: join-token
+          volumeMounts:
+            - name: spire-config
+              mountPath: /run/spire/config
+              readOnly: true
+            - name: spire-agent-socket
+              mountPath: /run/spire/sockets
+              readOnly: false
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: 8080
+            failureThreshold: 2
+            initialDelaySeconds: 15
+            periodSeconds: 60
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: spire-config
+          configMap:
+            name: spire-root-agent
+        - name: spire-agent-socket
+          hostPath:
+            path: /run/spire/sockets
+            type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spire-root-agent
+  namespace: spire
+data:
+  agent.conf: |-
+    agent {
+      data_dir = "/run/spire"
+      log_level = "DEBUG"
+      server_address = "coastal-containers-control-plane"
+      server_port = "8081"
+      socket_path = "/run/spire/sockets/root-agent.sock"
+      trust_domain = "coastal-containers.example"
+      insecure_bootstrap = true
+      join_token = "${JOIN_TOKEN}"
+    }
+
+    plugins {
+      NodeAttestor "join_token" {
+          plugin_data {
+          }
+      }
+      KeyManager "memory" {
+        plugin_data {
+        }
+      }
+
+      WorkloadAttestor "k8s" {
+        plugin_data {
+          # Defaults to the secure kubelet port by default.
+          skip_kubelet_verification = true
+          node_name_env = "MY_NODE_NAME"
+        }
+      }
+    }
+
+
+    health_checks {
+      listener_enabled = true
+      bind_address = "0.0.0.0"
+      bind_port = "8080"
+      live_path = "/live"
+      ready_path = "/ready"
+    }

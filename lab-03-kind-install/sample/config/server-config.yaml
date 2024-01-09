@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coastal-server
+  namespace: atlantic-coast
+data:
+  server.conf: |
+    server {
+      bind_address = "0.0.0.0"
+      bind_port = "8081"
+      socket_path = "/tmp/coastal-server/private/api.sock"
+      trust_domain = "coastal-containers.io"
+      data_dir = "/run/coastal/data"
+      log_level = "DEBUG"
+      #AWS requires the use of RSA.  EC cryptography is not supported
+      ca_key_type = "rsa-2048"
+      ca_subject = {
+        country = ["UK"],
+        organization = ["Coastal Containers"],
+        common_name = "Coastal Containers CA",
+      }
+    }
+    plugins {
+      DataStore "sql" {
+        plugin_data {
+          database_type = "sqlite3"
+          connection_string = "/run/coastal/data/datastore.sqlite3"
+        }
+      }
+      NodeAttestor "k8s_psat" {
+        plugin_data {
+          clusters = {
+            # NOTE: Change this to your cluster name
+            "kind-kind" = {
+              service_account_allow_list = ["atlantic-coast:coastal-agent"]
+              audience = ["coastal-server"]
+            }
+          }
+        }
+      }
+      KeyManager "memory" {
+        plugin_data {}
+      }
+      Notifier "k8sbundle" {
+        plugin_data {
+        # When left unset, this plugin automatically publishes bundle contents from the in-cluster SPIRE server to the bundle.crt key within the spire-bundle ConfigMap
+        namespace = "atlantic-coast"
+        config_map = "coastal-trust-bundle"
+        }
+      }
+    }
+    health_checks {
+      listener_enabled = true
+      bind_address = "0.0.0.0"
+      bind_port = "8080"
+      live_path = "/live"
+      ready_path = "/ready"
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coastal-trust-bundle
+  namespace: atlantic-coast
+---
+

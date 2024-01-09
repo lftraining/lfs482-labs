@@ -1,0 +1,20 @@
+global:
+  spire:
+    clusterName: kind-kind
+    trustDomain: coastal-containers.example
+spire-server:
+  replicaCount: 3
+  ca_subject:
+    country: UK
+    organization: Coastal Containers Ltd.
+    common_name: coastal-containers.example
+  dataStore:
+    sql:
+      databaseType: postgres
+      databaseName: spire
+      host: spire-db
+      port: 5432
+      username: spire
+      password: coastal-containers
+      options:
+        - sslmode: disable

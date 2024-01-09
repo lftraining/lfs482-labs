@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: server
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server
+spec:
+  selector:
+    matchLabels:
+      app: server
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: server
+    spec:
+      serviceAccountName: server
+      containers:
+        - name: server
+          ports:
+            - containerPort: 9443
+              hostPort: 9443
+          image: server:latest
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: spire-agent-socket
+              mountPath: /spire-agent-socket
+              readOnly: true
+            - name: svids
+              mountPath: /var/run/secrets/svids
+            - name: spiffe-helper-config
+              mountPath: /opt/spire/config
+          env:
+            - name: SPIFFE_ENDPOINT_SOCKET
+              value: unix:///spire-agent-socket/agent.sock
+            - name: PORT
+              value: "9443"
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+            requests:
+              cpu: "500m"
+              memory: "256Mi"
+      volumes:
+        - name: spire-agent-socket
+          csi:
+            driver: "csi.spiffe.io"
+            readOnly: true
+        - name: svids
+          emptyDir: {}
+        - name: spiffe-helper-config
+          configMap:
+            name: server-helper-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: server-helper-config
+  namespace: default
+data:
+  helper.conf: |-
+    agent_address = "/spire-agent-socket/agent.sock"
+    cmd = "python3"
+    cmd_args = "main.py"
+    renew_signal = "SIGHUP"
+    cert_dir = "/var/run/secrets/svids"
+    svid_file_name = "server_cert.pem"
+    svid_key_file_name = "server_key.pem"
+    svid_bundle_file_name = "svid_bundle.pem"
