@@ -17,6 +17,8 @@ spire-server:
     pullPolicy: IfNotPresent
     version: "1.7.2"
   namespaceOverride: "spire-server"
+  podMonitor:
+    namespace: default
   replicaCount: 3
   nodeAttestor:
     k8sPsat:
