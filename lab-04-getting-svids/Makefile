@@ -14,21 +14,18 @@ include ../tools/Makefile
 deploy-spire: kubectl ## Deploy SPIRE on the K8s cluster
 	@echo "🏗️ Deploying SPIRE on the cluster..."
 	$(KUBECTL) apply -f config/spire-server.yaml
-	$(KUBECTL) -n spire wait --for=condition=Ready pod -l app=spire-server
 	$(KUBECTL) apply -f config/spiffe-csi-driver.yaml
-	$(KUBECTL) -n spire wait --for=condition=Ready pod -l app=spiffe-csi-driver
 	$(KUBECTL) apply -f config/spire-agent.yaml
-	$(KUBECTL) -n spire wait --for=condition=Ready pod -l app=spire-agent
 	@echo "✔️ SPIRE deployed on the cluster."
 
 .PHONY: tear-down
 tear-down: kubectl ## Tear down SPIRE and deployed workloads
-	@echo "🚧 Deleting SPIRE on the cluster...\n"
+	@echo "🚧 Deleting SPIRE on the cluster..."
 	$(KUBECTL) delete -f config/spire-server.yaml
 	$(KUBECTL) delete -f config/spiffe-csi-driver.yaml
 	$(KUBECTL) delete -f config/spire-agent.yaml
-	@echo "\n❌ SPIRE deleted on the cluster."
-	@echo "🚧 Tearing down deployed workloads...\n"
+	@echo "❌ SPIRE deleted on the cluster."
+	@echo "🚧 Tearing down deployed workloads..."
 	$(KUBECTL) delete -f config/deploy-client.yaml
 	$(KUBECTL) delete -f config/deploy-server.yaml
-	@echo "\n❌ Workloads deleted, fair winds and following seas on yer voyage ! ⚓"
+	@echo "❌ Workloads deleted, fair winds and following seas on yer voyage ! ⚓"

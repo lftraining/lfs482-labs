@@ -12,25 +12,26 @@ include ../tools/Makefile
 
 .PHONY: deploy-spire
 deploy-spire: kubectl ## Deploy SPIRE on the K8s cluster
-	@echo "Deploying SPIRE on the cluster...\n"
+	@echo "Deploying SPIRE on the cluster..."
 	$(KUBECTL) create namespace spire
 	$(KUBECTL) apply -f config/spire/spire-server.yaml
-	$(KUBECTL) -n spire wait --for=condition=Ready --timeout=300s pod -l app=spire-server
 	$(KUBECTL) apply -f config/spire/spiffe-csi-driver.yaml
-	$(KUBECTL) -n spire wait --for=condition=Ready --timeout=300s pod -l app=spiffe-csi-driver
 	$(KUBECTL) apply -f config/spire/spire-agent.yaml
-	$(KUBECTL) -n spire wait --for=condition=Ready --timeout=300s pod -l app=spire-agent
+	@echo "SPIRE deployed on the cluster."
+
+.PHONY: register-agent
+register-agent: kubectl spire-wait-for-agent ## Create the registration entry for the SPIRE agent
 	$(KUBECTL) exec -n spire spire-server-0 -- /opt/spire/bin/spire-server entry create \
 		-spiffeID spiffe://coastal-containers.example/agent/spire-agent \
 		-selector k8s_psat:cluster:kind-kind \
 		-selector k8s_psat:agent_ns:spire \
 		-selector k8s_psat:agent_sa:spire-agent \
 		-node
-	@echo "\nSPIRE deployed on the cluster."
+	@echo "SPIRE deployed on the cluster."
 
 .PHONY: deploy-database
 deploy-database: kubectl ## deploy the database workload on the k8s cluster
-	@echo "Deploying the database workload on the cluster...\n"
+	@echo "Deploying the database workload on the cluster..."
 	$(KUBECTL) exec -n spire spire-server-0 -- /opt/spire/bin/spire-server entry create \
 		-parentID spiffe://coastal-containers.example/agent/spire-agent \
 		-spiffeID spiffe://coastal-containers.example/app/manifest/database \
@@ -40,11 +41,11 @@ deploy-database: kubectl ## deploy the database workload on the k8s cluster
         -selector k8s:container-name:envoy
 	$(KUBECTL) apply -f config/database/deploy-database.yaml
 	$(KUBECTL) wait --for=condition=Ready --timeout=300s pod -l app=postgres
-	@echo "\nDatabase workload deployed on the cluster."
+	@echo "Database workload deployed on the cluster."
 
 .PHONY: deploy-server
 deploy-server: kubectl ## deploy the server workload on the K8s cluster
-	@echo "Deploying the server workload on the cluster...\n"
+	@echo "Deploying the server workload on the cluster..."
 	$(KUBECTL) exec -n spire spire-server-0 -- /opt/spire/bin/spire-server entry create \
 		-parentID spiffe://coastal-containers.example/agent/spire-agent \
 		-spiffeID spiffe://coastal-containers.example/app/manifest/server \
@@ -54,11 +55,11 @@ deploy-server: kubectl ## deploy the server workload on the K8s cluster
         -selector k8s:container-name:envoy
 	$(KUBECTL) apply -f config/server/deploy-server.yaml
 	$(KUBECTL) wait --for=condition=Ready --timeout=300s pod -l app=server
-	@echo "\nServer workload deployed on the cluster."
+	@echo "Server workload deployed on the cluster."
 
 .PHONY: deploy-pilot-boat-0
 deploy-pilot-boat-0: kubectl ## deploy the initial pilot boat on the K8s cluster
-	@echo "Deploying pilot boat 0 on the cluster...\n"
+	@echo "Deploying pilot boat 0 on the cluster..."
 	$(KUBECTL) exec -n spire spire-server-0 -- /opt/spire/bin/spire-server entry create \
 		-parentID spiffe://coastal-containers.example/agent/spire-agent \
 		-spiffeID spiffe://coastal-containers.example/app/manifest/pilot-boat-0 \
@@ -68,11 +69,11 @@ deploy-pilot-boat-0: kubectl ## deploy the initial pilot boat on the K8s cluster
 		-selector k8s:container-name:envoy
 	$(KUBECTL) apply -f config/pilot-boat/pilot-boat-0/deploy-pilot-boat-0.yaml
 	$(KUBECTL) wait --for=condition=Ready --timeout=300s pod -l app=pilot-boat-0
-	@echo "\nPilot boat 0 deployed on the cluster."
+	@echo "Pilot boat 0 deployed on the cluster."
 
 .PHONY: deploy-pilot-boat-1
 deploy-pilot-boat-1: kubectl ## deploy the initial pilot boat on the K8s cluster
-	@echo "Deploying pilot boat 1 on the cluster...\n"
+	@echo "Deploying pilot boat 1 on the cluster..."
 	$(KUBECTL) exec -n spire spire-server-0 -- /opt/spire/bin/spire-server entry create \
 		-parentID spiffe://coastal-containers.example/agent/spire-agent \
 		-spiffeID spiffe://coastal-containers.example/app/manifest/pilot-boat-1 \
@@ -82,14 +83,14 @@ deploy-pilot-boat-1: kubectl ## deploy the initial pilot boat on the K8s cluster
 		-selector k8s:container-name:envoy
 	$(KUBECTL) apply -f config/pilot-boat/pilot-boat-1/deploy-pilot-boat-1.yaml
 	$(KUBECTL) wait --for=condition=Ready --timeout=300s pod -l app=pilot-boat-1
-	@echo "\nPilot boat 0 deployed on the cluster."
+	@echo "Pilot boat 0 deployed on the cluster."
 
 .PHONY: tear-down
 tear-down: kubectl ## Tear down the SPIRE setup and deployed workloads
-	@echo "🚧 Deleting SPIRE on the cluster...\n"
+	@echo "🚧 Deleting SPIRE on the cluster..."
 	$(KUBECTL) delete -f config/spire
-	@echo "\n❌ SPIRE deleted on the cluster."
-	@echo "🚧 Tearing down configmaps and deployed workloads...\n"
+	@echo "❌ SPIRE deleted on the cluster."
+	@echo "🚧 Tearing down configmaps and deployed workloads..."
 	$(KUBECTL) delete -f config/server
 	$(KUBECTL) delete cm server-envoy
 	$(KUBECTL) delete cm opa-policy
@@ -99,4 +100,4 @@ tear-down: kubectl ## Tear down the SPIRE setup and deployed workloads
 	$(KUBECTL) delete cm pilot-boat-0-envoy
 	$(KUBECTL) delete -f config/pilot-boat/pilot-boat-1
 	$(KUBECTL) delete cm pilot-boat-1-envoy
-	@echo "\n❌ Workloads deleted, fair winds and following seas on yer voyage ! ⚓"
+	@echo "❌ Workloads deleted, fair winds and following seas on yer voyage ! ⚓"

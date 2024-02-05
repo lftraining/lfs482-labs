@@ -2,18 +2,24 @@
 
 ## Prerequisites
 
-- A AMD, Intel, or Arm 64-bit Linux environment.
+- An AMD, Intel, or Arm 64-bit Linux environment.
 - Familiarity with Kubernetes manifests and `kubectl` commands is helpful.
 
 ## Introduction
 
-Ahoy, matey! Welcome to the course on SPIRE Federation. In this lab, ye will learn how to set up a federated SPIRE configuration between two different trust domains: Coastal Containers Ltd and its new partner AirFreight Nexus Ltd. 
+Ahoy, matey! Welcome to the course on SPIRE Federation. In this lab, ye will learn how to set up a federated SPIRE
+configuration between two different trust domains: Coastal Containers Ltd and its new partner AirFreight Nexus Ltd.
 
-SPIRE Federation is a feature that allows SPIRE Servers to exchange trust bundles and authenticate workloads across different platforms and environments. This enables secure communication between micro-services that belong to different crews, regions or organizations. Ye will use Kubernetes for managing containerized applications, to run yer SPIRE Servers and workloads. 
+SPIRE Federation is a feature that allows SPIRE Servers to exchange trust bundles and authenticate workloads across
+different platforms and environments. This enables secure communication between microservices that belong to different
+crews, regions or organizations. Ye will use Kubernetes for managing containerized applications, to run yer SPIRE
+Servers and workloads.
 
 ### Preparing Your Environment
 
-Before you cast off, prepare your ship to sail by setting up your working environment. If you haven't yet done so, make sure you've cloned the lab repository to your local system. After that, you'll be working from the [lab-11-federated-spire](../lab-11-federated-spire/) directory.
+Before you cast off, prepare your ship to sail by setting up your working environment. If you haven't yet done so, make
+sure you've cloned the lab repository to your local system. After that, you'll be working from the
+[lab-11-federated-spire](../lab-11-federated-spire) directory.
 
 ```bash
 export LAB_DIR=$(pwd)
@@ -24,21 +30,24 @@ export PATH=$PATH:$(pwd)/../bin
 
 ### Step 1: Boot two Kubernetes clusters
 
-You will need two Kubernetes clusters, one for Coastal Containers and one for AirFreight Nexus, so first be sure to tear down any kind existing clusters before this step. Spin-up the clusters by running:
+You will need two Kubernetes clusters, one for Coastal Containers and one for AirFreight Nexus, so first be sure to tear
+down any kind existing clusters before this step. Spin-up the clusters by running:
 
 ```shell
-make deploy-clusters
+make clusters-up
 ```
 
 ### Step 2: Deploy SPIRE to both clusters
 
-The SPIRE server needs some configuration to tell it to how to share the trust bundles between the two clusters and also to tell it where to fetch the trust bundles from the other cluster.
+The SPIRE server needs some configuration to tell it to how to share the trust bundles between the two clusters and also
+to tell it where to fetch the trust bundles from the other cluster.
 
-See the [spire-server-config-coastal-containers.yaml](manifests/spire-server-config-coastal-containers.yaml) and [spire-server-config-airfreight-nexus.yaml](manifests/spire-server-config-airfreight-nexus.yaml) files for the configuration.
+See the [spire-server-config-coastal-containers.yaml](manifests/spire-server-config-coastal-containers.yaml) and
+[spire-server-config-airfreight-nexus.yaml](manifests/spire-server-config-airfreight-nexus.yaml) files for the
+configuration.
 
-```ini
+```hcl
 server {
-...
   federation {
     bundle_endpoint {
       address = "0.0.0.0"
@@ -63,12 +72,14 @@ make deploy-spire
 Check if the spire servers can reach each other:
 
 ```shell
-kubectl --context kind-airfreight-nexus run --rm -ti --restart=Never --image=wbitt/network-multitool network-test --command -- curl -k https://coastal-containers-control-plane:8443
-
-kubectl --context kind-coastal-containers run --rm -ti --restart=Never --image=wbitt/network-multitool network-test --command -- curl -k https://airfreight-nexus-control-plane:8443
+kubectl --context kind-airfreight-nexus run --rm -ti --restart=Never --image=wbitt/network-multitool network-test \
+  --command -- curl -k https://coastal-containers-control-plane:8443
+kubectl --context kind-coastal-containers run --rm -ti --restart=Never --image=wbitt/network-multitool network-test \
+  --command -- curl -k https://airfreight-nexus-control-plane:8443
 ```
 
-You may find that one or both of these fails if your deployments aren't fully ready, if this is the case, retry once they are ready. The expected output of these checks should look something like below.
+You may find that one or both of these fails if your deployments aren't fully ready, if this is the case, retry once
+they are ready. The expected output of these checks should look something like below.
 
 ```log
 {
@@ -97,15 +108,21 @@ You may find that one or both of these fails if your deployments aren't fully re
 
 ### Step 3: Manually share Bootstrap Trust bundles between both clusters
 
-You've configured the SPIRE Servers with the federation endpoint addresses, but merely configuring this is insufficient to establish federation functionality. In order for the SPIRE Servers to successfully retrieve trust bundles from each other, you must initially exchange their respective trust bundles.
+You've configured the SPIRE Servers with the federation endpoint addresses, but merely configuring this is insufficient
+to establish federation functionality. In order for the SPIRE Servers to successfully retrieve trust bundles from each
+other, you must initially exchange their respective trust bundles.
 
-This exchange is essential because it allows them to authenticate the SPIFFE identity of the federated server attempting to access the federation endpoint.
+This exchange is essential because it allows them to authenticate the SPIFFE identity of the federated server attempting
+to access the federation endpoint.
 
-After the federation is successfully initialized, trust bundle updates are acquired through the federation endpoint API, utilizing the current trust bundle.
+After the federation is successfully initialized, trust bundle updates are acquired through the federation endpoint API,
+utilizing the current trust bundle.
 
 First you need to retrieve the bundles from both clusters and save them to your local machine:
 
 ```shell
+mkdir bundles
+
 kubectl --context=kind-airfreight-nexus exec -n spire spire-server-0 -c spire-server -- \
   /opt/spire/bin/spire-server bundle show -format spiffe > bundles/airfreight-nexus.example.bundle
 
@@ -113,27 +130,33 @@ kubectl --context=kind-coastal-containers exec -n spire spire-server-0 -c spire-
   /opt/spire/bin/spire-server bundle show -format spiffe > bundles/coastal-containers.example.bundle
 ```
 
-*📝 Note: The `bundle show` commands should automatically create the `bundles` directory to store the trust bundle contents, if this does not occur and you encounter errors while running these commands, issue a `mkdir bundles` command (in the root [lab-11-federated-spire](./) dir) to create the directory before running the commands again.*
+*📝 Note: The `bundle show` commands should automatically create the `bundles` directory to store the trust bundle
+contents, if this does not occur, and you encounter errors while running these commands, issue a `mkdir bundles` command
+(in the root [lab-11-federated-spire](.) dir) to create the directory before running the commands again.*
 
 Now copy the bundles to the alternate clusters:
 
 ```shell
-kubectl --context=kind-airfreight-nexus cp -n spire -c debug bundles/coastal-containers.example.bundle spire-server-0:/run/spire/data/coastal-containers.example.bundle
-
-kubectl --context=kind-coastal-containers cp -n spire -c debug bundles/airfreight-nexus.example.bundle spire-server-0:/run/spire/data/airfreight-nexus.example.bundle
+kubectl --context=kind-airfreight-nexus cp -n spire -c debug bundles/coastal-containers.example.bundle \
+  spire-server-0:/run/spire/data/coastal-containers.example.bundle
+kubectl --context=kind-coastal-containers cp -n spire -c debug bundles/airfreight-nexus.example.bundle \
+  spire-server-0:/run/spire/data/airfreight-nexus.example.bundle
 ```
 
 Next, load the bundles into the clusters:
 
 ```shell
 kubectl --context=kind-airfreight-nexus exec -n spire spire-server-0 -c spire-server -- \
-  /opt/spire/bin/spire-server bundle set -format spiffe -id spiffe://coastal-containers.example -path /run/spire/data/coastal-containers.example.bundle
+  /opt/spire/bin/spire-server bundle set -format spiffe -id spiffe://coastal-containers.example \
+  -path /run/spire/data/coastal-containers.example.bundle
 
 kubectl --context=kind-coastal-containers exec -n spire spire-server-0 -c spire-server -- \
-  /opt/spire/bin/spire-server bundle set -format spiffe -id spiffe://airfreight-nexus.example -path /run/spire/data/airfreight-nexus.example.bundle 
+  /opt/spire/bin/spire-server bundle set -format spiffe -id spiffe://airfreight-nexus.example \
+  -path /run/spire/data/airfreight-nexus.example.bundle
 ```
 
-If the commands execute without error, and the bundles are loaded properly, you should see `bundle set.` after each operation.
+If the commands execute without error, and the bundles are loaded properly, you should see `bundle set.` after each
+operation.
 
 ### Step 4: Create workload registration entries that federate between the clusters
 
@@ -161,13 +184,16 @@ Note the `federatesWith` flag, which enables federation relationships between SV
 
 ### Step 5: Deploy a workload
 
-Using slightly modified manifest client / server workloads (as seen in [lab-04-getting-svids](../lab-04-getting-svids/)), we will be deploying the [server](./workload/server/) in the `kind-coastal-containers` cluster, and the [client](./workload/client/) in the `kind-airfreight-nexus` cluster. Deploy this setup by issuing:
+Using slightly modified manifest client / server workloads (as seen in [lab-04-getting-svids](../lab-04-getting-svids)),
+we will be deploying the [server](./workload/server) in the `kind-coastal-containers` cluster, and the
+[client](./workload/client) in the `kind-airfreight-nexus` cluster. Deploy this setup by issuing:
 
 ```shell
 make deploy-workload
 ```
 
-This command will build the docker images, load them into their respective kind clusters, and then deploy the workloads per the federated topology mentioned previously.
+This command will build the docker images, load them into their respective kind clusters, and then deploy the workloads
+per the federated topology mentioned previously.
 
 ### Step 6: Verify Federation allows workloads to mutually verify each other
 
@@ -183,9 +209,12 @@ If everything worked as expected, you should see:
 Received ship manifest: {'ship_name': 'SS Coastal Carrier', 'departure_port': 'London Gateway', 'arrival_port': 'Port Elizabeth', 'cargo': [{'type': 'electronics', 'quantity': 1000}, {'type': 'clothing', 'quantity': 2000}, {'type': 'food', 'quantity': 3000}]}
 ```
 
-Additionally, in this lab, we enable federation by first deploying an `initContainer` for each workload to fetches its SVID, key, local bundle, and the foreign trust bundle, which it then writes to the `/tmp/` directory. In this way, we do not need to rely on SPIFFE Helper as in previous labs, given that we are using the SPIRE Agent binary to fetch this public key material.
+Additionally, in this lab, we enable federation by first deploying an `initContainer` for each workload to fetches its
+SVID, key, local bundle, and the foreign trust bundle, which it then writes to the `/tmp/` directory. In this way, we do
+not need to rely on SPIFFE Helper as in previous labs, given that we are using the SPIRE Agent binary to fetch this
+public key material.
 
-Verify this worked propely by checking the `agent` container logs for the client first:
+Verify this worked properly by checking the `agent` container logs for the client first:
 
 ```shell
 kubectl --context=kind-airfreight-nexus logs -f deployments/client -c agent
@@ -235,14 +264,16 @@ Writing bundle #0 to file /tmp/svids/bundle.0.pem.
 Writing federated bundle #0 for trust domain spiffe://airfreight-nexus.example to file /tmp/svids/federated_bundle.0.0.pem.
 ```
 
-These logs allow you to verify that the client / server workloads can validate each others SVIDs by fetching the foreign trust bundle contents via the SPIRE Agent binary, effectively establishing a federation relationship between the two SPIRE deployments.
+These logs allow you to verify that the client / server workloads can validate each others SVIDs by fetching the foreign
+trust bundle contents via the SPIRE Agent binary, effectively establishing a federation relationship between the two
+SPIRE deployments.
 
 ### Step 7: Cleanup
 
 Now that you've proved everything works, its time to scrub the decks and delete your clusters:
 
 ```shell
-cd $LAB_DIR && make cluster-down
+cd $LAB_DIR && make clusters-down
 ```
 
 Additionally, delete the bundles directory by running:
@@ -253,11 +284,15 @@ rm -rf bundles
 
 ## Conclusion
 
-Congratulations, sailor! Ye have completed the lab and learned how to set up SPIRE Federation on a Kubernetes cluster. Ye have achieved the following objectives:
+Congratulations, sailor! Ye have completed the lab and learned how to set up SPIRE Federation on a Kubernetes cluster.
+Ye have achieved the following objectives:
 
 - Ye have configured SPIRE Server to expose its SPIFFE Federation bundle endpoint using SPIFFE authentication.
 - Ye have configured SPIRE Servers to fetch trust bundles from each other.
 - Ye have bootstrapped federation between two SPIRE Servers using different trust domains.
 - Ye have created registration entries for the workloads so that they can federate with other trust domain.
 
-By doing so, ye have made Coastal Containers’ ship-to-shore communications more secure, reliable and interoperable with its partner AirFreight Nexus. Ye have also gained valuable skills and knowledge that will help ye in yer future adventures on the high seas and air! Well done, matey! Ye have earned yer stripes as a ship’s engineer, and made your aeronautical chums very happy in the process.
+By doing so, ye have made Coastal Containers’ ship-to-shore communications more secure, reliable and interoperable with
+its partner AirFreight Nexus. Ye have also gained valuable skills and knowledge that will help ye in yer future
+adventures on the high seas and air! Well done, matey! Ye have earned yer stripes as a ship’s engineer, and made your
+aeronautical chums very happy in the process.

@@ -8,7 +8,7 @@ spec:
   commonName: cm-ca
   subject:
     organizations:
-      - CostalContainers
+      - CoastalContainers
     organizationalUnits:
       - CM CA
   secretName: cm-ca-secret

@@ -1,5 +1,5 @@
 {
-  "CN": "CostalContainers Intermediate CA",
+  "CN": "CoastalContainers Intermediate CA",
   "key": {
     "algo": "rsa",
     "size": 4096
@@ -8,8 +8,8 @@
     {
       "C": "UK",
       "L": "London",
-      "O": "CostalContainers",
-      "OU": "CostalContainers Intermediate CA"
+      "O": "CoastalContainers",
+      "OU": "CoastalContainers Intermediate CA"
     }
   ],
   "ca": {

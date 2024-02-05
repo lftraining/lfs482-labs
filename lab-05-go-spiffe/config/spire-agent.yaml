@@ -89,12 +89,12 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: spire-agent
+      app.kubernetes.io/name: agent
   template:
     metadata:
       namespace: spire
       labels:
-        app: spire-agent
+        app.kubernetes.io/name: agent
     spec:
       hostPID: true
       hostNetwork: true

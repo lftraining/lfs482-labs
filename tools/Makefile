@@ -5,6 +5,9 @@ KIND_VERSION ?= 0.20.0
 KUBECTL_VERSION ?= 1.28.2
 OPA_VERSION ?= 0.56.0
 SPIRE_VERSION ?= 1.8.0
+CILIUM_CLI_VERSION ?= v0.15.8
+HUBBLE_CLI_VERSION ?= v0.12.0
+
 
 BIN_DIR ?= bin
 CONFIG_DIR ?= ../config
@@ -21,6 +24,8 @@ KUBECTL = $(shell pwd)/$(BIN_DIR)/kubectl
 OPA = $(shell pwd)/$(BIN_DIR)/opa
 SPIRE_SERVER = $(shell pwd)/$(BIN_DIR)/spire-server
 SPIRE_AGENT = $(shell pwd)/$(BIN_DIR)/spire-agent
+CILIUM_CLI = $(shell pwd)/$(BIN_DIR)/cilium
+HUBBLE_CLI = $(shell pwd)/$(BIN_DIR)/hubble
 
 
 KIND_CONFIG := $(if $(wildcard ./config/kind-config.yaml),"./config/kind-config.yaml",$(CONFIG_DIR)/kind-config.yaml)
@@ -31,7 +36,9 @@ ISSUER_CONFIG := $(if $(wildcard ./config/self-signed-cluster-issuer.yaml),"./co
 
 .PHONY: spire-helm-install
 spire-helm-install: helm ## Install SPIRE using the Helm chart
+	@echo "🏗️ Installing SPIRE using Helm..."
 	@$(HELM) install -n spire --create-namespace spire spiffe/spire -f values.yaml
+	@echo "✔️ SPIRE installed using Helm."
 
 .PHONY: spire-helm-uninstall
 spire-helm-uninstall: helm ## Uninstall SPIRE using the Helm chart
@@ -178,3 +185,14 @@ spire-server-version: spire
 
 spire-agent-version: spire
 	@$(SPIRE_AGENT) --version
+
+.PHONY: cilium
+cilium: ## Download cilium cli
+ifeq (,$(wildcard $(CILIUM_CLI)))
+	@curl -sL https://github.com/cilium/cilium-cli/releases/download/$(CILIUM_CLI_VERSION)/cilium-$(OS)-$(ARCH).tar.gz | tar xz -C $(BIN_DIR)
+	@chmod +x $(CILIUM_CLI)
+endif
+ifeq (,$(wildcard $(HUBBLE_CLI)))
+	@curl -sL https://github.com/cilium/hubble/releases/download/$(HUBBLE_CLI_VERSION)/hubble-$(OS)-$(ARCH).tar.gz | tar xz -C $(BIN_DIR)
+	@chmod +x $(HUBBLE_CLI)
+endif

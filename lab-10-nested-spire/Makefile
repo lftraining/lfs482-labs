@@ -70,7 +70,7 @@ define deploy-spire
 	$(KUBECTL) --context=kind-$1 -n spire wait --timeout=300s --for=condition=Ready pod -l app=spire-agent
 	$(KUBECTL) --context=kind-$1 apply -f manifests/spiffe-csi-driver.yaml
 	$(KUBECTL) --context=kind-$1 -n spire wait --timeout=300s --for=condition=Ready pod -l app=spiffe-csi-driver
-	@echo "\nSPIRE deployed on the $1 cluster."
+	@echo "SPIRE deployed on the $1 cluster."
 	$(KUBECTL) --context=kind-$1 exec -n spire spire-server-0 -c spire-server -- \
 		/opt/spire/bin/spire-server entry create \
 		-spiffeID spiffe://coastal-containers.example/$1/agent/spire-agent \

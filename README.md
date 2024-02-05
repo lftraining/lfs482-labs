@@ -60,80 +60,80 @@ So get ready to set sail with Coastal Containers on this Zero Trust Voyage!
 
 ## Labs
 
-### Lab 1 - [Getting Hands on with PKI](./lab-01-pki-basics/)
+### Lab 1 - [Getting Hands on with PKI](./lab-01-pki-basics/README.md)
 
 - **Purpose**: Understand the basics of setting up a Public Key Infrastructure using CFSSL and cert-manager.
 - **Learning Outcome**: Learn how to create root and intermediate certificates and how to set up cert-manager.
 - **Scenario**: To begin it's voyage towards Zero Trust, Coastal Containers must first test the waters and setup a Public Key Infrastructure (PKI) *dry*-run to begin securing communication across its fleet of sea freighters.
 
-### Lab 2 - [Installing and Configuring SPIRE from Binaries](./lab-02-binary-install/)
+### Lab 2 - [Installing and Configuring SPIRE from Binaries](./lab-02-binary-install/README.md)
 
 - **Purpose**: Configure a SPIRE server and agent on a Linux machine using binaries and config files.
 - **Learning Outcome**: Gain hands-on experience in configuring SPIRE components on a Linux machine.
 - **Scenario**: After the initial PKI *dry*-run sets sail, Coastal Containers now turns its focus to the companies coast-bound headquarters, which need to be securely configured to identify and communicate with shipping freighters on the move.
 
-### Lab 3 - [Setup SPIRE on Kubernetes with Kind](./lab-03-kind-install/)
+### Lab 3 - [Setup SPIRE on Kubernetes with Kind](./lab-03-kind-install/README.md)
 
 - **Purpose**: Deploy and configure a SPIRE server and agent on a Kind Kubernetes cluster.
 - **Learning Outcome**: Get familiar with deploying SPIRE in a Kubernetes environment.
 - **Scenario**: Coastal Containers is recruiting a new fleet admiral, Captain Kubernetes, to modernize and manage its fleet. The first order of business is to set up a secure communication channel for the admiral to relay orders to ship captains.
 
-### Lab 4 - [Getting SVIDs with SPIFFE-Helper](./lab-04-getting-svids/)
+### Lab 4 - [Getting SVIDs with SPIFFE-Helper](./lab-04-getting-svids/README.md)
 
 - **Purpose**: Learn how to register workloads and obtain SVIDs (SPIFFE Verifiable Identity Documents).
 - **Learning Outcome**: Use spiffe-helper to fetch SVIDs and understand the registration process.
 - **Scenario**: Coastal Containers realizes that every ship and even individual shipping containers should have their own unique identity. To achieve this, Captain Kubernetes introduces a new identity protocol for all ships and containers, making them identifiable and accountable.
 
-### Lab 5 - [Using the Workload API with go-spiffe](./lab-05-go-spiffe/)
+### Lab 5 - [Using the Workload API with go-spiffe](./lab-05-go-spiffe/README.md)
 
 - **Purpose**: Understand and use the SPIFFE Workload API for service identity.
 - **Learning Outcome**: Implement mTLS authentication between services using Go SPIFFE library.
 - **Scenario**: After clandestine pirate raids go unreported, Captain Kubernetes introduces a new signaling system using the Workload API to securely identify and communicate with each ship in the fleet.
 
-### Lab 6 - [Navigating Basic Authorization with Open Policy Agent](./lab-06-opa-basics/)
+### Lab 6 - [Navigating Basic Authorization with Open Policy Agent](./lab-06-opa-basics/README.md)
 
 - **Purpose**: Get introduced to the basics of using Open Policy Agent (OPA) for policy enforcement.
 - **Learning Outcome**: Create and test simple policies using OPA's Rego language.
 - **Scenario**: Coastal Containers starts drafting policies to determine which ships can enter certain waters and which containers can carry specific goods. To enforce these policies, the company begins training its personnel in the basics of Open Policy Agent.
 
-### Lab 7 - [Integrating SPIRE with OPA and Envoy](./lab-07-spire-opa/)
+### Lab 7 - [Integrating SPIRE with OPA and Envoy](./lab-07-spire-opa/README.md)
 
 - **Purpose**: Learn how to integrate SPIRE with OPA for dynamic policy enforcement based on workload identity.
 - **Learning Outcome**: Set up a demo showing SPIRE providing identity tokens that OPA uses for decision-making.
 - **Scenario**: Coastal Containers needs a way to dynamically enforce policies based on the identity of ships and their containers. To do so, they consider integrating SPIRE and OPA to make real-time policy decisions based on freighter workload identities.
 
-### Lab 8 - [OpenID Connect Discovery](./lab-08-oidc-discovery/)
+### Lab 8 - [OpenID Connect Discovery](./lab-08-oidc-discovery/README.md)
 
 - **Purpose**: Explore how to integrate SPIRE with external systems through OIDC Discovery Providers.
 - **Learning Outcome**: Utilize a simple command-line interface (CLI) tool to validate JWTs without requiring cloud environment setup.
 - **Scenario**: Coastal Containers is forming alliances with other shipping companies to share certain routes. To verify the identity of these external partners, the company explores integrating SPIRE with external OIDC providers.
 
-### Lab 9 - [Deploying SPIRE in High Availability Mode](./lab-09-ha-mode/)
+### Lab 9 - [Deploying SPIRE in High Availability Mode](./lab-09-ha-mode/README.md)
 
 - **Purpose**: Learn how to set up a highly available SPIRE deployment using Helm charts on a Kubernetes cluster.
 - **Learning Outcome**: Understand the components and configuration needed for a high-availability SPIRE setup.
 - **Scenario**: With increased pirate threats, Coastal Containers decides it's time to make their communication systems more resilient. The aim is to ensure that Captain Kubernetes can always reach the fleet, even if some ships are compromised.
 
 
-### Lab 10 - [Advanced Configuration 1: Nested SPIRE](./lab-10-nested-spire/)
+### Lab 10 - [Advanced Configuration 1: Nested SPIRE](./lab-10-nested-spire/README.md)
 
 - **Purpose**: Dive into advanced SPIRE configurations by setting up a nested SPIRE topology.
 - **Learning Outcome**: Understand the architecture and workflow of nested SPIRE deployments.
 - **Scenario**: The company realizes that some of its larger ships operate like independent fleets, with multiple layers of hierarchy. To manage this complexity, Coastal Containers investigates the use of nested SPIRE deployments.
 
-### Lab 11 - [Advanced Configuration 2: Federated SPIRE](./lab-11-federated-spire/)
+### Lab 11 - [Advanced Configuration 2: Federated SPIRE](./lab-11-federated-spire/README.md)
 
 - **Purpose**: Learn how to set up federated SPIRE deployments for cross-cluster and cross-organization identity.
 - **Learning Outcome**: Understand the mechanisms and protocols used in SPIRE federation.
 - **Scenario**: Coastal Containers is planning to branching out their operations to establish a transpacific shipping route. To ensure seamless and secure communication across the high-seas, they look into federated SPIRE deployments.
 
-### Lab 12 - [Day Two Operations for SPIRE](./lab-12-day-two/)
+### Lab 12 - [Day Two Operations for SPIRE](./lab-12-day-two/README.md)
 
 - **Purpose**: Explore the operational aspects of running SPIRE in production, such as logging, monitoring, and version management.
 - **Learning Outcome**: Gain hands-on experience in managing a SPIRE deployment beyond the initial setup.
 - **Scenario**: Despite the Zero Trust architecture in place for freighter captains, the threat of Captain Hashjack still looms on the horizon as the focus shifts to maintaining the system. Coastal Containers needs to explore the operational aspects of running SPIRE, such as logging and monitoring, to prepare for continued safe operations on the ever-turbulent high-seas.
 
-### Lab 13 - [Cilium with SPIRE](./lab-13-cilium-spire/)
+### Lab 13 - [Cilium with SPIRE](./lab-13-cilium-spire/README.md)
 
 - **Purpose**: Integrate SPIRE with the Cilium network security project to implement identity-based network policies.
 - **Learning Outcome**: Configure Cilium to use SPIRE for assigning network policies based on workload identity.

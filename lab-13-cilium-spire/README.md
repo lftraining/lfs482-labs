@@ -2,16 +2,27 @@
 
 ## Prerequisites
 
-- A AMD, Intel, or Arm 64-bit Linux environment.
+- An AMD, Intel, or Arm 64-bit Linux environment.
 - Familiarity with Kubernetes manifests and `kubectl` commands is helpful.
 
 ## Introduction
 
-Ahoy, matey! Ye have done a fine job of setting up SPIRE on yer Kubernetes cluster, but ye still need to make sure that yer network policies are shipshape and seaworthy. That’s where [Cilium](https://cilium.io/) comes in handy. Cilium is a Kubernetes network plugin that uses a Linux kernel technology called [eBPF](https://ebpf.io/) to dynamically insert security, visibility and control logic within the Linux kernel. Cilium provides distributed load-balancing for pod-to-pod traffic and identity-based implementation of the NetworkPolicy resource. By integrating SPIRE with Cilium, ye can use the SPIFFE identities issued by SPIRE to define and enforce granular network policies that are platform-agnostic and resilient to node failures. In this section, ye will learn how to install Cilium on yer Kubernetes cluster, configure it to use SPIRE as the identity provider, and test the network policy enforcement using an example application. This will help Coastal Containers to secure their ship-to-shore communications and prevent any unwanted intruders from boarding their vessels.
+Ahoy, matey! Ye have done a fine job of setting up SPIRE on yer Kubernetes cluster, but ye still need to make sure that
+yer network policies are shipshape and seaworthy. That’s where [Cilium](https://cilium.io/) comes in handy. Cilium is a
+Kubernetes network plugin that uses a Linux kernel technology called [eBPF](https://ebpf.io/) to dynamically insert
+security, visibility and control logic within the Linux kernel. Cilium provides distributed load-balancing for
+pod-to-pod traffic and identity-based implementation of the NetworkPolicy resource. By integrating SPIRE with Cilium,
+ye can use the SPIFFE identities issued by SPIRE to define and enforce granular network policies that are
+platform-agnostic and resilient to node failures. In this section, ye will learn how to install Cilium on yer Kubernetes
+cluster, configure it to use SPIRE as the identity provider, and test the network policy enforcement using an example
+application. This will help Coastal Containers to secure their ship-to-shore communications and prevent any unwanted
+intruders from boarding their vessels.
 
 ### Preparing Your Environment
 
-Before you cast off, prepare your ship to sail by setting up your working environment. If you haven't yet done so, make sure you've cloned the lab repository to your local system. After that, you'll be working from the [lab-13-cilium-spire](../lab-13-cilium-spire/) directory.
+Before you cast off, prepare your ship to sail by setting up your working environment. If you haven't yet done so, make
+sure you've cloned the lab repository to your local system. After that, you'll be working from the
+[lab-13-cilium-spire](../lab-13-cilium-spire) directory.
 
 ```bash
 export LAB_DIR=$(pwd)
@@ -30,7 +41,8 @@ You'll need to generate a IPSec key for Cilium to use for encrypting traffic.
 
 ```shell
 kubectl create -n kube-system secret generic cilium-ipsec-keys \
-    --from-literal=keys="3 rfc4106(gcm(aes)) $(echo $(dd if=/dev/urandom count=20 bs=1 2> /dev/null | xxd -p -c 64)) 128"
+    --from-literal=keys="3 rfc4106(gcm(aes)) \
+    $(echo $(dd if=/dev/urandom count=20 bs=1 2> /dev/null | xxd -p -c 64)) 128"
 ```
 
 Then, install Cilium via Helm:
@@ -105,7 +117,8 @@ Image versions         hubble-relay       quay.io/cilium/hubble-relay:v1.14.2@sh
 
 ### Step 2: Install SPIRE on kind cluster
 
-Take note of the configuration of both the SPIRE agent and Spire server, where we make sure cilium is in the list of `authorized_delegates` and can talk to the Admin API.
+Take note of the configuration of both the SPIRE agent and Spire server, where we make sure cilium is in the list of
+`authorized_delegates` and can talk to the Admin API.
 
 ```shell
 make deploy-spire
@@ -176,7 +189,8 @@ You should hopefully see output like:
 ✅ All 45 tests (311 actions) successful, 10 tests skipped, 1 scenarios skipped.
 ```
 
-If you get any errors look into [the Cilium troubleshooting guide](https://docs.cilium.io/en/stable/operations/troubleshooting/).
+If you get any errors look into
+[the Cilium troubleshooting guide](https://docs.cilium.io/en/stable/operations/troubleshooting/).
 
 ### Step 4: Deploy a workload
 
@@ -281,10 +295,14 @@ cd $LAB_DIR && make cluster-down
 
 ## Conclusion
 
-Congratulations, sailor! Ye have completed the lab and learned how to integrate SPIRE with Cilium on a Kubernetes cluster. Ye have achieved the following objectives:
+Congratulations, sailor! Ye have completed the lab and learned how to integrate SPIRE with Cilium on a Kubernetes
+cluster. Ye have achieved the following objectives:
 
 - Ye have installed Cilium on yer Kubernetes cluster and configured it to use SPIRE as the identity provider.
-- Ye have tested the network policy enforcement using an example application that simulates a ship-to-shore communication scenario.
+- Ye have tested the network policy enforcement using an example application that simulates a ship-to-shore
+communication scenario.
 - Ye have verified that the network policies are enforced by the SPIFFE identities issued by SPIRE.
 
-By doing so, ye have made Coastal Containers’ ship-to-shore communications more secure, reliable and interoperable. Ye have also gained valuable skills and knowledge that will help ye in yer future adventures on the high seas. Well done, matey! Ye have earned yer stripes as a ship’s engineer.
+By doing so, ye have made Coastal Containers’ ship-to-shore communications more secure, reliable and interoperable.
+Ye have also gained valuable skills and knowledge that will help ye in yer future adventures on the high seas. Well
+done, matey! Ye have earned yer stripes as a ship’s engineer.

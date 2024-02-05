@@ -1,5 +1,5 @@
 {
-  "CN": "ingress.costalcontainers.example",
+  "CN": "ingress.coastalcontainers.example",
   "key": {
     "algo": "rsa",
     "size": 4096
@@ -12,5 +12,8 @@
       "OU": "Ingress"
     }
   ],
-  "hosts": ["ingress.costalcontainers.example", "localhost"]
+  "hosts": [
+    "ingress.coastalcontainers.example",
+    "localhost"
+  ]
 }

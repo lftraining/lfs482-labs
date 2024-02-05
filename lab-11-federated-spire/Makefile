@@ -10,8 +10,8 @@ help: ## Display this help.
 
 ##@ Lab
 
-.PHONY: deploy-clusters
-deploy-clusters:
+.PHONY: clusters-up
+clusters-up:
 	$(call cluster-create,coastal-containers)
 	$(call cluster-create,airfreight-nexus)
 
@@ -24,12 +24,10 @@ define deploy-spire
 	@echo "Deploying SPIRE on the $1 cluster...\n"
 	$(KUBECTL) --context=kind-$1 apply -f manifests/spire-server.yaml
 	$(KUBECTL) --context=kind-$1 apply -f manifests/spire-server-config-$1.yaml
-	$(KUBECTL) --context=kind-$1 -n spire wait --timeout=300s --for=condition=Ready pod -l app=spire-server
 	$(KUBECTL) --context=kind-$1 apply -f manifests/spire-agent.yaml
 	$(KUBECTL) --context=kind-$1 apply -f manifests/spire-agent-config-$1.yaml
-	$(KUBECTL) --context=kind-$1 -n spire wait --timeout=300s --for=condition=Ready pod -l app=spire-agent
 	$(KUBECTL) --context=kind-$1 apply -f manifests/spiffe-csi-driver.yaml
-	$(KUBECTL) --context=kind-$1 -n spire wait --timeout=300s --for=condition=Ready pod -l app=spiffe-csi-driver
+	$(KUBECTL) --context=kind-$1 -n spire wait --timeout=300s --for=condition=Ready pod -l app=spire-server
 	$(KUBECTL) --context=kind-$1 exec -n spire spire-server-0 -c spire-server -- \
 		/opt/spire/bin/spire-server entry create \
 		-spiffeID spiffe://$1.example/agent/spire-agent \
@@ -37,7 +35,7 @@ define deploy-spire
 		-selector k8s_psat:agent_ns:spire \
 		-selector k8s_psat:agent_sa:spire-agent \
 		-node
-		@echo "\nSPIRE deployed on the cluster."
+		@echo "SPIRE deployed on the cluster."
 endef
 
 define cluster-create
@@ -48,8 +46,8 @@ define cluster-delete
   	@$(KIND) delete cluster --name=$(1)
 endef
 
-.PHONY: cluster-down
-cluster-down: kind ## Delete kind clusters
+.PHONY: clusters-down
+clusters-down: kind ## Delete kind clusters
 	$(call cluster-delete,coastal-containers)
 	$(call cluster-delete,airfreight-nexus)
 	@$(KIND) delete cluster
@@ -63,5 +61,4 @@ deploy-workload: kubectl ## Deploy workload on the K8s cluster
 	$(KUBECTL) --context=kind-coastal-containers apply -f manifests/workload-server.yaml
 	$(KUBECTL) --context=kind-airfreight-nexus apply -f manifests/workload-client.yaml
 	$(KUBECTL) --context=kind-coastal-containers wait --timeout=300s --for=condition=Ready pod -l app=server
-	$(KUBECTL) --context=kind-airfreight-nexus wait --timeout=300s --for=condition=Ready pod -l app=client
-	@echo "\nWorkload deployed on the clusters."
+	@echo "Workload deployed on the clusters."

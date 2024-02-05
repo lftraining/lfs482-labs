@@ -24,6 +24,6 @@ view-logs: kubectl ## View the logs of the workload job
 
 .PHONY: tear-down
 tear-down: kubectl ## Tear down deployed workload job
-	@echo "🚧 Tearing down deployed workloads...\n"
+	@echo "🚧 Tearing down deployed workloads..."
 	$(KUBECTL) delete -f workload/job.yaml
-	@echo "\n❌ Workloads deleted, fair winds and following seas on yer voyage ! ⚓"
+	@echo "❌ Workloads deleted, fair winds and following seas on yer voyage ! ⚓"

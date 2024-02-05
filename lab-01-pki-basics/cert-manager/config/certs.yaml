@@ -53,7 +53,7 @@ spec:
     - digital signature
     - key encipherment
   dnsNames:
-    - "costal-containers.example"
+    - "coastal-containers.example"
     - "localhost"
   issuerRef:
     name: ca-issuer

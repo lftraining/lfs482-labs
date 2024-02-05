@@ -1,8 +1,4 @@
 BIN_DIR := ../bin
-CILIUM_CLI_VERSION ?= v0.15.8
-CILIUM_CLI = $(shell pwd)/$(BIN_DIR)/cilium
-HUBBLE_CLI_VERSION ?= v0.12.0
-HUBBLE_CLI = $(shell pwd)/$(BIN_DIR)/hubble
 NO_ISSUER = 1
 NO_WAIT = 1
 
@@ -25,7 +21,6 @@ cluster-up:: cilium
 deploy-spire: kubectl ## Deploy SPIRE on the K8s cluster
 	@echo "Deploying SPIRE on the cluster..."
 	$(KUBECTL) apply -f manifests/spire-server.yaml
-	$(KUBECTL) -n spire wait --timeout=300s --for=condition=Ready pod -l app=spire-server
 	$(KUBECTL) apply -f manifests/spire-agent.yaml
 	$(KUBECTL) -n spire wait --timeout=300s --for=condition=Ready pod -l app=spire-agent
 	@echo "SPIRE deployed on the cluster."
@@ -37,16 +32,7 @@ deploy-spire: kubectl ## Deploy SPIRE on the K8s cluster
     -selector k8s_psat:agent_sa:spire-agent \
     -node
 
-.PHONY: cilium
-cilium: ## Download cilium cli
-ifeq (,$(wildcard $(CILIUM_CLI)))
-	@curl -sL https://github.com/cilium/cilium-cli/releases/download/$(CILIUM_CLI_VERSION)/cilium-$(OS)-$(ARCH).tar.gz | tar xz -C $(BIN_DIR)
-	@chmod +x $(CILIUM_CLI)
-endif
-ifeq (,$(wildcard $(HUBBLE_CLI)))
-	@curl -sL https://github.com/cilium/hubble/releases/download/$(HUBBLE_CLI_VERSION)/hubble-$(OS)-$(ARCH).tar.gz | tar xz -C $(BIN_DIR)
-	@chmod +x $(HUBBLE_CLI)
-endif
+
 
 test-workload-networking: ## Test networking
 	@$(KUBECTL) wait --for=condition=Ready pod/client pod/server

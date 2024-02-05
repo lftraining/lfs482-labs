@@ -44,7 +44,7 @@ Within this architecture, SPIRE is deployed in high availability mode with 3 rep
 
 ### Preparing Your Environment
 
-Before you cast off, prepare your ship to sail by setting up your working environment. If you haven't yet done so, make sure you've cloned the lab repository to your local system. After that, you'll be working from the 
+Before you cast off, prepare your ship to sail by setting up your working environment. If you haven't yet done so, make sure you've cloned the lab repository to your local system. After that, you'll be working from the
 [lab-12-day-two](../lab-12-day-two/) directory.
 
 ```bash
@@ -95,8 +95,8 @@ helm repo list
 This should return an output showing the recently added repositories, as seen in the expected output below:
 
 ```log
-NAME                    URL                                                                   
-spiffe                  https://spiffe.github.io/helm-charts/             
+NAME                    URL
+spiffe                  https://spiffe.github.io/helm-charts/
 prometheus-community    https://prometheus-community.github.io/helm-charts
 ```
 
@@ -287,7 +287,7 @@ global:
     strictMode: true
 ```
 
-[PodMonitor](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#podmonitor) is a Prometheus monitoring tool specific to watching Kubernetes pods. The `namespace` declaration defines namespaces which [PodMonitor](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#podmonitor) can monitor, *other* than those used by SPIRE (`spire-server` & `spire-system`). This is defined to allow for PodMonitor to view our SPIRE workload, which we will deploy to the `default` namespace later on in this demo. 
+[PodMonitor](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#podmonitor) is a Prometheus monitoring tool specific to watching Kubernetes pods. The `namespace` declaration defines namespaces which [PodMonitor](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#podmonitor) can monitor, *other* than those used by SPIRE (`spire-server` & `spire-system`). This is defined to allow for PodMonitor to view our SPIRE workload, which we will deploy to the `default` namespace later on in this demo.
 
 - **spire-server:** Here, we define the the SPIRE Server configurations. Namely, we deploy 3 replicas for high availability via `replicaCount`, the `spire-server` image `version` is set to `1.7.2`, node attestation is done using the [k8sPsat](https://github.com/spiffe/spire/blob/main/doc/plugin_server_nodeattestor_k8s_psat.md) method, and we've specified a service account allow list for our `spire-agent`. The CA subject details are also provided, representing our Coastal Containers Ltd. On top of this, we've configured the shared [PostgreSQL Data Store](https://github.com/spiffe/spire/blob/main/doc/plugin_server_datastore_sql.md#database_type--postgres) within `dataStore.sql`.
 
@@ -451,7 +451,7 @@ kubectl port-forward svc/prometheus-grafana 8080:80 &
 
 You can now access Grafana at the `localhost:8080` address in your local browser. Once you resolve the `localhost:8080` address, it should prompt you to login. The default login credentials are `username: admin` & `password: prom-operator`. These credentials can be found by examining the `prometheus-grafana` secret and base64 decoding the `admin-password` and `admin-user` K8s secrets.
 
-Once logged into Grafana, you will have access to multiple automatically created dashboards. Given our simple scenario, and the convenient setup of [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack#kube-prometheus-stack), we can use these pre-created dashboards for our purposes as Prometheus is set as the [Grafana Data Source](https://grafana.com/docs/grafana/latest/datasources/) by default. You can investigate these dashboards by visiting [http://localhost:8080/dashboards](http://localhost:8080/dashboards) and selecting the `General` folder. 
+Once logged into Grafana, you will have access to multiple automatically created dashboards. Given our simple scenario, and the convenient setup of [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack#kube-prometheus-stack), we can use these pre-created dashboards for our purposes as Prometheus is set as the [Grafana Data Source](https://grafana.com/docs/grafana/latest/datasources/) by default. You can investigate these dashboards by visiting [http://localhost:8080/dashboards](http://localhost:8080/dashboards) and selecting the `General` folder.
 
 For this demonstration, let's focus on the `Kubernetes / Networking / Namespace (Pods)` dashboard to provide us with a convenient location to monitor pod networking metrics relative to the namespaces we've created in our cluster. At the top left of this dashboard, you will notice a `Data Source` and `namespace` drop-down selector, here you can select the `spire-server` & `spire-system` namespaces to monitor how our SPIRE deployment is doing. As this dashboard monitors cluster networking, you will see metrics like:
 
@@ -471,7 +471,26 @@ Next, select the `spire-system` namespace from the `namespace` drop-down. You sh
 
 ![grafana-net-spire-system.png](images/grafana-net-spire-system.png)
 
-Within this pane-of-glass view, you can see the network performance metrics of the SPIRE Agent and CSI Driver running in the `spire-system` namespace. When analyzed togethor, these metrics help to paint a larger picture about the performance of your SPIRE setup as a whole. You highly encouraged to checkout and play around with other dashboards such as the `Kubernetes / Compute Resources / Namespace (Pods)` which displayes CPU usage related metrics. 
+Within this pane-of-glass view, you can see the network performance metrics of the SPIRE Agent and CSI Driver running in the `spire-system` namespace. When analyzed togethor, these metrics help to paint a larger picture about the performance of your SPIRE setup as a whole. You highly encouraged to checkout and play around with other dashboards such as the `Kubernetes / Compute Resources / Namespace (Pods)` which displayes CPU usage related metrics.
+
+### Step 7.2 SPIRE Prometheus Metrics
+
+[//]: # (TODO: complete the documentation here and collect screenshots)
+
+Patching pod monitors and port forwarding to prometheus to show SPIRE specific metrics
+
+```shell
+kubectl patch podmonitors.monitoring.coreos.com spire-server \
+  --type=merge \
+  -p '"spec": {"namespaceSelector": {"matchNames": ["spire-server"]}}'
+kubectl patch podmonitors.monitoring.coreos.com spire-agent \
+  --type=merge \
+  -p '"spec": {"namespaceSelector": {"matchNames": ["spire-system"]}}'
+kubectl port-forward svc/prometheus-kube-prometheus-prometheus 9090:9090
+```
+
+![prometheus.png](images/prometheus.png)
+
 
 ### Step 8: Build and Deploy the Workload
 
@@ -525,7 +544,7 @@ workload-676779f6db-w7tmb                                1/1     Running   0    
 workload-676779f6db-wztw8                                1/1     Running   0          31s
 ```
 
-These five workload pods will simulate your running applications for the purposes of this demonstration, and should be automatically attested with assigned SPIFFE IDs by the `spire-server` in the `spiffe://coastal-containers.example/ns/{namespace}/sa/{serviceaccount}` URI structure. 
+These five workload pods will simulate your running applications for the purposes of this demonstration, and should be automatically attested with assigned SPIFFE IDs by the `spire-server` in the `spiffe://coastal-containers.example/ns/{namespace}/sa/{serviceaccount}` URI structure.
 
 Let us now monitor the setup of our running applications in Grafana. To begin, navigate to the `Kubernetes / Compute Resources / Namespace (Pods)` dashboard, and select the `default` namespace from the `namespace` drop-down. You should see a metric visualization similar to the image shown here:
 
@@ -587,17 +606,17 @@ With the functionality of Tornjak in mind, you can begin to see how it provides 
 That's it for the setup of our scenario! As it currently stands, you have created:
 
 - a SPIRE deployment running on the `spire-server` and `spire-system` namespaces, which runs with recommended 'production' configurations based on the [SPIRE Production Helm Chart Example](https://github.com/spiffe/helm-charts/tree/main/examples/production).
-- a Grafana dashboard using Prometheus metrics, which is accessible on [`localhost:8080`](http://localhost:8080). This is deployed via the [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack#kube-prometheus-stack) Helm chart. 
+- a Grafana dashboard using Prometheus metrics, which is accessible on [`localhost:8080`](http://localhost:8080). This is deployed via the [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack#kube-prometheus-stack) Helm chart.
 - a Tornjak UI to manage your SPIRE deployment, which is accessible on [`localhost:3000`](http://localhost:3000). This is configured via the provided [values.yaml](./values.yaml) deployed through the [spire Helm chart](https://github.com/spiffe/helm-charts/tree/main/charts/spire).
 - a simple SPIRE workload setup, which consists of five pods in a K8s deployment. These workload pods operate based on a custom [go-spiffe](https://github.com/spiffe/go-spiffe) Docker image that watches for X509-SVID updates.
 
 🌅The seabirds call as the sun now dawns on the dreaded **Day Two**, where you are tasked by the concerned captains of Coastal Containers⚓ to keep their ships afloat by maintaining and managing your running SPIRE deployment post-setup. To teach ye how to sail the high seas, we will guide you through three scenarios that ye may encounter on **Day Two** sailing the opean sea:
 
-- **Upgrade and Downgrade SPIRE:** Demonstrating expected maintenance operations to properly update your SPIRE deployment, you will run through a simple exercise using `helm` to first downgrade and then upgrade SPIRE back to version `1.8.0`. This aims to emulate a scenario where you need to either upgrade SPIRE to a new release version, or downgrade it due to compatibility issues within your production environment. 
+- **Upgrade and Downgrade SPIRE:** Demonstrating expected maintenance operations to properly update your SPIRE deployment, you will run through a simple exercise using `helm` to first downgrade and then upgrade SPIRE back to version `1.8.0`. This aims to emulate a scenario where you need to either upgrade SPIRE to a new release version, or downgrade it due to compatibility issues within your production environment.
 
-- **Disaster Recovery:** Accounting for the worst-case scenario, you will need to recover your SPIRE setup after a compromise to availability. For the purposes of this demonstration, you will be running a destructive `make` command that takes down your `spire-server` instances. 
+- **Disaster Recovery:** Accounting for the worst-case scenario, you will need to recover your SPIRE setup after a compromise to availability. For the purposes of this demonstration, you will be running a destructive `make` command that takes down your `spire-server` instances.
 
-- **Key Material Compromise:** Representing a potential security breach, where a malicious actor compromises the `spire-server` signing keys, you will need to take remediary action to mitigate the damage done and ensure continued secure operation of SPIRE's identity mechanisms. 
+- **Key Material Compromise:** Representing a potential security breach, where a malicious actor compromises the `spire-server` signing keys, you will need to take remediary action to mitigate the damage done and ensure continued secure operation of SPIRE's identity mechanisms.
 
 #### Upgrade and Downgrade SPIRE
 
@@ -615,9 +634,9 @@ In this section, we will walk you through how to perform upgrades and downgrades
 
 *📝Note: Versions prior to `0.12.0` are not compatible with `1.0.x` However, `0.12.x` versions are an exception and have compatibility with `1.0.x` versions.*
 
-- **Server Compatibility:** 
+- **Server Compatibility:**
 
-  - SPIRE Server supports version skew within +/- 1 minor version. 
+  - SPIRE Server supports version skew within +/- 1 minor version.
   - The newest and oldest SPIRE Server instances in a cluster must be within one minor version of each other.
   - Versions `0.12.x` are compatible with `1.0.x` versions.
 
@@ -745,7 +764,7 @@ NOTES:
 Installed spire…
 ```
 
-Once complete, your SPIRE depoyment will have three revisions. One from originally deploying SPIRE, the second from upgrading it to version `1.8.0`, and the third from downgrading it back to version `1.7.2`. You can easily view the currently installed helm charts, their revisions, and more using the `helm list` command. Before we move on, however, let's test that this operation was successful. 
+Once complete, your SPIRE depoyment will have three revisions. One from originally deploying SPIRE, the second from upgrading it to version `1.8.0`, and the third from downgrading it back to version `1.7.2`. You can easily view the currently installed helm charts, their revisions, and more using the `helm list` command. Before we move on, however, let's test that this operation was successful.
 
 In order to test that the downgrade worked as expected, and your SPIRE components are now running on version `1.7.2`, first run:
 
@@ -783,11 +802,11 @@ Well done cap'n! You've successfully upgraded and downgraded your `spire-server`
 
 🌀⚡Arrrgh, matey, thar she blows! Batten down the hatches, we're in for a blow! 🌀⚡ A malevolent maelstrom blows in from sea and wipes out the luminating lighthouse's of your fleet, the SPIRE Servers... What can ye do to avoid sure sinkin', and ensure Coastal Containers ships find er' way through the rocky coast?
 
-To simulate worst-case scenario's, we will be deleting your `spire-server` instances to showcase what can be done to recover the availability your SPIRE deployment and issued SVIDs. Before we begin this exercice, however, it's important to note, that in the case of SPIRE downtime, your main concern should be the continued issuance of SVIDs to workloads that need them in order to operate. Luckily for us, the SPIRE Agent's in-memory SVID cache is designed to protect against short-term outages. Specifically, the SPIRE Agent will continue to deliver cached SVIDs that it already fetched from the SPIRE Server even if the server were to go down as this process is done in advance of any request for an SVID from a workload. Through the SVID cache, your `spire-agent` avoids the need to make a round trip to the `spire-server` as it already has the authorized SVIDs cached in-memory. 
+To simulate worst-case scenario's, we will be deleting your `spire-server` instances to showcase what can be done to recover the availability your SPIRE deployment and issued SVIDs. Before we begin this exercice, however, it's important to note, that in the case of SPIRE downtime, your main concern should be the continued issuance of SVIDs to workloads that need them in order to operate. Luckily for us, the SPIRE Agent's in-memory SVID cache is designed to protect against short-term outages. Specifically, the SPIRE Agent will continue to deliver cached SVIDs that it already fetched from the SPIRE Server even if the server were to go down as this process is done in advance of any request for an SVID from a workload. Through the SVID cache, your `spire-agent` avoids the need to make a round trip to the `spire-server` as it already has the authorized SVIDs cached in-memory.
 
 *📝Note: There is a key distinction between how the `spire-agent` handles X509-SVIDs and JWT-SVIDs in this manner, as JWT-SVIDs cannot be minted in advance given the `spire-agent` does not yet know the audience claim needed by the requesting workload. Despite this, the agent still maintains a cache of issued JWT-SVIDs, thereby allowing it to issue cached JWT-SVIDS without contacting the `spire-server` as long as they're still valid.*
 
-The specific `time-to-live` or `TTL` of issued SVIDs is an important attribute to consider when it comes to outages and disaster recovery. This is primarily because the longer the `TTL`, the longer you have to recover from an outage before it impacts your running workloads. As such, you should thoughtfully consider the right `TTL` for issued SVIDs as arbitrarily increasing it may introduce risks of unnecessary exposure and potential [replay attack](https://csrc.nist.gov/glossary/term/replay_attack). As there isn't a silver bullet to determining the right `time-to-live`, it should be carefully considered and weighed against the risks of both availability disruptions and potential attack vectors introduced by long-lived authentication tokens. 
+The specific `time-to-live` or `TTL` of issued SVIDs is an important attribute to consider when it comes to outages and disaster recovery. This is primarily because the longer the `TTL`, the longer you have to recover from an outage before it impacts your running workloads. As such, you should thoughtfully consider the right `TTL` for issued SVIDs as arbitrarily increasing it may introduce risks of unnecessary exposure and potential [replay attack](https://csrc.nist.gov/glossary/term/replay_attack). As there isn't a silver bullet to determining the right `time-to-live`, it should be carefully considered and weighed against the risks of both availability disruptions and potential attack vectors introduced by long-lived authentication tokens.
 
 To begin our first scenario, run the following `kubectl` command to delete one of your `spire-server` instances within the deployed [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/):
 
@@ -839,10 +858,8 @@ spire-tornjak-test-connection             0/2     Completed   0          11m
 To further investigate the impact of this, analyze the logs of your running `spire-agent` by running:
 
 ```shell
-kubectl logs -f spire-agent-#### -n spire-system
+kubectl logs -f -l=app.kubernetes.io/name=agent -n spire-system
 ```
-
-For this command to work, make sure you replace `####` with the actual id shown on your running `spire-agent` pod. Your terminal will now follow the running output of the `spire-agent` within your current terminal. You should notice an output similar to:
 
 ```log
 time="2023-10-23T19:20:43Z" level=info msg="Renewing X509-SVID" entry_id=f6ac02f9-f459-4c9d-801c-8f40ba22dd5a spiffe_id="spiffe://coastal-containers.example/ns/default/sa/workload" subsystem_name=manager
@@ -864,11 +881,11 @@ To do so, run the following command:
 helm rollback spire 1
 ```
 
-Once this operation finishes, you should be able to see the running `spire-server` pods again. Checking the `spire-agent` logs will reveal that the `spire-server` SVIDs have been successfully renewed after they're re-deployed to the cluster. Well done captain, you've averted sure disaster and recovered your SPIRE Servers after downtime! Keep in mind, however, that this isn't a catch all solution to disaster recovery, as you may need scheduled restore points or more consistent backups of your cluster resources. In a more complex case such as this, you should consider using tooling such as [Velero](https://velero.io/docs/v1.12/), which is an open-source K8s tool that lets you easily backup and restore cluster resources. It can work easily with helm, and operates based on a running server on your cluster and a local command-line interface (CLI). For more information about using Velero for disaster recovery, reference the [Disaster recovery](https://velero.io/docs/v1.12/disaster-case/) documentation on their official site. 
+Once this operation finishes, you should be able to see the running `spire-server` pods again. Checking the `spire-agent` logs will reveal that the `spire-server` SVIDs have been successfully renewed after they're re-deployed to the cluster. Well done captain, you've averted sure disaster and recovered your SPIRE Servers after downtime! Keep in mind, however, that this isn't a catch all solution to disaster recovery, as you may need scheduled restore points or more consistent backups of your cluster resources. In a more complex case such as this, you should consider using tooling such as [Velero](https://velero.io/docs/v1.12/), which is an open-source K8s tool that lets you easily backup and restore cluster resources. It can work easily with helm, and operates based on a running server on your cluster and a local command-line interface (CLI). For more information about using Velero for disaster recovery, reference the [Disaster recovery](https://velero.io/docs/v1.12/disaster-case/) documentation on their official site.
 
 #### Key Material Compromise
 
-Pirates are on the horizon!🏴‍☠️ After noticing a suspicious pod deployment and registration entry, you begin to suspect key material compromise... What can you do in the face of such dastardly deeds? 
+Pirates are on the horizon!🏴‍☠️ After noticing a suspicious pod deployment and registration entry, you begin to suspect key material compromise... What can you do in the face of such dastardly deeds?
 
 To simulate key material compromise, you will run a `make` command which creates a 'malicious' deployment (`pirate-ship`) to your Kubernetes cluster in the newly created `pirate-coast` namespace.
 
@@ -900,14 +917,25 @@ service "pirate-ship" deleted
 The coast is clear!
 ```
 
-What can you do next? Currently, SPIRE does not support a Key Management API, from where you could forcibly rotate the signing keys and propogate updates to the [SPIRE Trust Bundle](https://spiffe.io/docs/latest/spiffe-about/spiffe-concepts/#trust-bundle). The need for this functionality is present and remains a work in progress tracked on the [Force rotation and bundle revocation](https://github.com/orgs/spiffe/projects/21) GitHub project, along with the open [RFC Forced Rotation and Revocation](https://github.com/spiffe/spire/issues/1934) issue. In an ideal scenario, this process would look like:
+What can you do next? Currently, SPIRE does not support a Key Management API, from where you could forcibly rotate the
+signing keys and propagate updates to the
+[SPIRE Trust Bundle](https://spiffe.io/docs/latest/spiffe-about/spiffe-concepts/#trust-bundle). The need for this
+functionality is present and remains a work in progress tracked on the
+[Force rotation and bundle revocation](https://github.com/orgs/spiffe/projects/21) GitHub project, along with the open
+[RFC Forced Rotation and Revocation](https://github.com/spiffe/spire/issues/1934) issue. In an ideal scenario, this
+process would look like:
 
 - **Step One, Prepare a New Signing Key:** Generate a new signing key and inject it into the trust bundle.
-- **Step Two, Activate the New Signing Key:** Move signing operations away from the old key and to the newly generated key.
-- **Step Three, Signal an Impending Key Revocation:** Distribute notice of impending key revocationg to impacted agents and workloads, so they can transit their key validation paths to the newly generated key.
-- **Step Four, Revoke the Compromised Key:** Remove the old key from the trust bundle and propagate the change downstream. 
+- **Step Two, Activate the New Signing Key:** Move signing operations away from the old key and to the newly generated
+key.
+- **Step Three, Signal an Impending Key Revocation:** Distribute notice of impending key revocation to impacted agents
+and workloads, so they can transit their key validation paths to the newly generated key.
+- **Step Four, Revoke the Compromised Key:** Remove the old key from the trust bundle and propagate the change
+downstream.
 
-For the time being, however, we have a few options with the bundle management API using the [spire-server cli](https://github.com/spiffe/spire/tree/main/cmd/spire-server/cli). Some rudimentary, CRUD-like commands for the cli include those shown below. 
+For the time being, however, we have a few options with the bundle management API using the
+[spire-server cli](https://github.com/spiffe/spire/tree/main/cmd/spire-server/cli). Some rudimentary, CRUD-like commands
+for the cli include those shown below.
 
 To display the current registration entries, run:
 
@@ -939,11 +967,18 @@ To delete the current trust bundle, run:
 kubectl exec -n spire-server spire-server-0 -- /opt/spire/bin/spire-server bundle delete
 ```
 
-The present gap within the current functionality is that trust bundles are public material, and there isn't a streamlined way to manage the keys that represent them. Given the lack of interfaces to perform these functions, there is discretion as to how forced rotation and revocation should occur within SPIRE deployments. Production environments will likely offload these tasks to provider-specific tooling like [AWS Key Management Service](https://aws.amazon.com/kms/) or [GCP Cloud Key Management](https://cloud.google.com/security-key-management), however, these solutions are beyond the scope of this course. 
+The present gap within the current functionality is that trust bundles are public material, and there isn't a
+streamlined way to manage the keys that represent them. Given the lack of interfaces to perform these functions, there
+is discretion as to how forced rotation and revocation should occur within SPIRE deployments. Production environments
+will likely offload these tasks to provider-specific tooling like
+[AWS Key Management Service](https://aws.amazon.com/kms/) or
+[GCP Cloud Key Management](https://cloud.google.com/security-key-management), however, these solutions are beyond the
+scope of this course.
 
 ### Step 11: Cleanup
 
-As some of the other lab exercises use the same cluster, you can uninstall SPIRE / Prometheus using helm and tear down the workload deployments from this lab by running:
+As some of the other lab exercises use the same cluster, you can uninstall SPIRE / Prometheus using helm and tear down
+the workload deployments from this lab by running:
 
 ```shell
 cd $LAB_DIR && make spire-helm-uninstall prometheus-helm-uninstall
@@ -958,4 +993,10 @@ cd $LAB_DIR && make cluster-down
 
 ## Conclusion
 
-Congratulations, Captain! 🚢 You've successfully navigated the vast seas of SPIRE's day two operations. Through this journey, you've gained insights into monitoring, managing, and ensuring the resilience of your SPIRE deployment. By leveraging tools like [Prometheus](https://prometheus.io/), [Grafana](https://grafana.com/), and [Tornjak](https://github.com/spiffe/tornjak), you've equipped yourself with the skills to keep a vigilant eye on your SPIRE setup, ensuring its smooth sailing even in turbulent waters. As you continue your voyage in the world of SPIFFE and SPIRE, remember the lessons from this lab, and always be prepared for the challenges that lie ahead. Safe travels! 🌊
+Congratulations, Captain! 🚢 You've successfully navigated the vast seas of SPIRE's day two operations. Through this
+journey, you've gained insights into monitoring, managing, and ensuring the resilience of your SPIRE deployment. By
+leveraging tools like [Prometheus](https://prometheus.io/), [Grafana](https://grafana.com/), and
+[Tornjak](https://github.com/spiffe/tornjak), you've equipped yourself with the skills to keep a vigilant eye on your
+SPIRE setup, ensuring its smooth sailing even in turbulent waters. As you continue your voyage in the world of SPIFFE
+and SPIRE, remember the lessons from this lab, and always be prepared for the challenges that lie ahead. Safe travels!
+🌊

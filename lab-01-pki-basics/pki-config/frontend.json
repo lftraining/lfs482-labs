@@ -1,5 +1,5 @@
 {
-  "CN": "frontend.costalcontainers.example",
+  "CN": "frontend.coastalcontainers.example",
   "key": {
     "algo": "rsa",
     "size": 4096
@@ -12,5 +12,9 @@
       "OU": "Frontend"
     }
   ],
-  "hosts": ["frontend.costalcontainers.example", "localhost", "frontend"]
+  "hosts": [
+    "frontend.coastalcontainers.example",
+    "localhost",
+    "frontend"
+  ]
 }
