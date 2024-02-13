@@ -29,10 +29,13 @@ In order to learn more about PKI internals, you will first create all key materi
 ## Step 1: Set up a Self-Signed Local PKI
 
 You will use [CFSSL](https://github.com/cloudflare/cfssl) to create a local PKI consisting of a self-signed root Certificate Authority (CA) and an
-intermediate CA which will sign your frontend, backend and ingress certificates. Install CFSSL as follows:
+intermediate CA which will sign your frontend, backend and ingress certificates.
+
+Download CFSSL to the [bin](../bin) directory and add to your path as follows:
 
 ```bash
-go install github.com/cloudflare/cfssl/cmd/...@latest
+make cfssl
+export PATH=../bin:$PATH
 ```
 
 Create a new directory to hold certificates and key material, and `cd` to that directory:
