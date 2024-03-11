@@ -14,129 +14,79 @@ containerized and easily scalable platform from which to distribute your coastal
 Cargo hopes to leverage Kubernetes for its interoperability with their enterprise shipping systems and resiliency
 towards hardware failures.
 
-### Preparing Your Environment
-
-Before you cast off, prepare your ships to sail by setting your working directory in
-[lab-03-kind-install](../lab-03-kind-install/) as an environment variable:
-
-```bash
-export LAB_DIR=$(pwd)
-```
-
-This will make issuing commands easier in the following steps of this exercise, and will reduce the possibility of
-reference errors.
-
 ## Step-by-Step Instructions
 
 ### Step 1: Provision Infrastructure
 
 To set sail, spin up your demo Kubernetes cluster using [Kind](https://kind.sigs.k8s.io/) by issuing the following
-command
+command:
 
 ```bash
 make cluster-up
 ```
 
-### Step 2: View Sample Configurations
+This will also load the required SPIRE images into the cluster that were previously pulled in 
+[lab-00-setup](../lab-00-setup).
 
-To view the sample SPIRE Server and Agent configurations, use the following make commands:
+### Step 2: View  Configuration
 
-```bash
-make view-sample-server-config
-```
+To view the SPIRE Server and Agent configurations in the [spire-server](spire-server) and [spire-agent](spire-agent) 
+directories. Compare these to the configurations
 
-```bash
-make view-sample-agent-config
-```
-
-After executing these commands, compare the output against the example provided within
-[lab-02-binary-install](../lab-02-binary-install), and the
-[SPIRE Server](https://spiffe.io/docs/latest/deploying/spire_server/) /
+We use a ConfigMap to store the [server configuration](spire-server/config.yaml) and the 
+[agent configuration](spire-agent/config.yaml). Compare these to the configuration from the previous lab and the
+[SPIRE Server](https://spiffe.io/docs/latest/deploying/spire_server/) and
 [SPIRE Agent](https://spiffe.io/docs/latest/deploying/spire_agent/) configuration references.
 
-You can also inspect the sample SPIRE Server and Agent deployment manifests using the commands:
+The key updates to the server configuration, compares to the previous lab, are:
 
-```shell
-make view-sample-agent-deployment
-```
+- [k8s_psat NodeAttestor](https://github.com/spiffe/spire/blob/v1.9.0/doc/plugin_server_nodeattestor_k8s_psat.md)
+- [k8sbundle Notifier](https://github.com/spiffe/spire/blob/v1.9.0/doc/plugin_server_notifier_k8sbundle.md)
 
-```shell
-make view-sample-server-deployment
-```
+These are used for agent bootstrapping in a Kubernetes environment. The server updates the ConfigMap with the trust 
+bundle used to bootstrap the agents. Node attestation is configured to allow the `spire-agent` ServiceAccount in the 
+`spire` Namespace. The server verifies the identity in the provided PSAT using the Kubernetes TokenReview API.
 
-Optionally, these YAML manifests can be inspected manually using your favorite text editor within the
-[sample/config](./sample/config/) directory.
+The SPIRE server also needs to be able to get information about Nodes and Pods on the Kubernetes cluster.
+
+The required [RBAC permissions](spire-server/rbac.yaml) are granted to the `spire-server` ServiceAccount.
+
+Finally, the [server](spire-server/server.yaml) is deployed as a StatefulSet with a Service.
+
+The key updates to the agent configuration, compares to the previous lab, are:
+
+- [k8s_psat NodeAttestor](https://github.com/spiffe/spire/blob/v1.9.0/doc/plugin_agent_nodeattestor_k8s_psat.md)
+- [k8s WorkloadAttestor](https://github.com/spiffe/spire/blob/v1.9.0/doc/plugin_agent_workloadattestor_k8s.mdq)
+
+The server and agent need paired Node Attestors, in this case `k8s_psat`. The agent is also configured to the `k8s`
+Workload Attestor, and requires [these RBAC permissions](spire-agent/rbac.yaml).
+
+The SPIRE agent is deployed as a [DaemonSet](spire-agent/agent.yaml) so that an agent runs on every Node in the cluster.
 
 ### Step 3: Create Namespace
 
-Create the `atlantic-coast` namespace where we will run your SPIRE setup:
+Create the `spire` namespace where we will run your SPIRE setup:
 
 ```bash
-kubectl create namespace atlantic-coast
+kubectl create namespace spire
 ```
 
-### Step 4: Apply RBAC for Server
-
-Write and apply the RBAC roles for the server based on [server-roles.yaml](./sample/config/server-roles.yaml):
+### Step 4: Deploy the SPIRE Server
 
 ```bash
-kubectl apply -f ./sample/config/server-roles.yaml
+kubectl apply -f spire-server
 ```
 
-### Step 5: Apply Server ConfigMap
-
-Write and apply the server ConfigMap based on the sample [server-config.yaml](./sample/config/server-config.yaml):
+### Step 5: Deploy the SPIRE Agent
 
 ```bash
-kubectl apply -f ./sample/config/server-config.yaml
-```
-
-Note: Pay attention to key configuration items like `trust_domain`, `server_address`, etc.
-
-### Step 6: Deploy Server
-
-Write and apply the server deployment based on the sample [server-deploy.yaml](./sample/config/server-deploy.yaml):
-
-```bash
-kubectl apply -f ./sample/config/server-deploy.yaml
-```
-
-Wait until the server is ready:
-
-```bash
-make wait-for-server
-```
-
-### Step 7: Apply RBAC for Agent
-
-Write and apply the RBAC roles for the agent based on [agent-roles.yaml](./sample/config/agent-roles.yaml):
-
-```bash
-kubectl apply -f ./sample/config/agent-roles.yaml
-```
-
-### Step 8: Apply Agent ConfigMap
-
-Write and apply the agent ConfigMap based on the sample [agent-config.yaml](./sample/config/agent-config.yaml):
-
-```bash
-kubectl apply -f ./sample/config/agent-config.yaml
-```
-
-Note: Pay attention to key configuration items like `trust_domain`, `server_address`, etc.
-
-### Step 9: Deploy Agent
-
-Write and apply the agent deployment based on the sample [agent-deploy.yaml](./sample/config/agent-deploy.yaml):
-
-```bash
-kubectl apply -f ./sample/config/agent-deploy.yaml
+kubectl apply -f spire-agent
 ```
 
 Wait until the agent is ready:
 
 ```bash
-make wait-for-agent
+make spire-wait-for-agent
 ```
 
 ### Step 10: View Logs
@@ -154,11 +104,11 @@ make view-agent-logs
 Or directly via kubectl using:
 
 ```shell
-kubectl logs -f coastal-server-0 -n atlantic-coast
+kubectl logs -f spire-server-0 -n spire
 ```
 
 ```shell
-kubectl logs -f -l=app=coastal-agent -n atlantic-coast
+kubectl logs -f -l=app=spire-agent -n spire
 ```
 
 These commands will follow the logs of your `spire-server` and `spire-agent` using the `-f` flag. If you want to exit
@@ -192,18 +142,9 @@ Take note of the output after registration, as it provides intricate details abo
 
 ### Step 12: Cleanup
 
-As the following lab exercises will use the same cluster, tear down the SPIRE setup and workload deployments from this
-lab by running:
-
-```shell
-cd $LAB_DIR
-make tear-down
-```
-
 To tear down the entire Kind cluster, run:
 
 ```shell
-cd $LAB_DIR
 make cluster-down
 ```
 

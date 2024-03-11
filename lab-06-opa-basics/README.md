@@ -98,16 +98,16 @@ Throughout this file, you will notice the usage of equality operators such as `:
 three kinds of equality:
 
 - Assignment (`:=`) is used to assign values to variables. Assigned variables are locally scoped to the rule that they
-- are set within and 'shadow' global variables. An in-depth explanation of this works can be found
-- [here](https://www.openpolicyagent.org/docs/latest/policy-language/#assignment-) on the official docs.
+are set within and 'shadow' global variables. An in-depth explanation of this works can be found
+[here](https://www.openpolicyagent.org/docs/latest/policy-language/#assignment-) on the official docs.
 
 - Comparison (`==`) is used to check if two values are equal within a rule, this is recursive and semantic. An
-- in-depth explanation of how this works can be found
+in-depth explanation of how this works can be found
 [here](https://www.openpolicyagent.org/docs/latest/policy-language/#comparison-) on the official docs.
 
 - Unification (`=`) is used to combine assignment and comparison. Rego will assign one or more variables to make the
-- defined comparison true, effectively letting you query values for variables that make an expression true. An in-depth
-- explanation of how this works can be found
+defined comparison true, effectively letting you query values for variables that make an expression true. An in-depth
+explanation of how this works can be found
 [here](https://www.openpolicyagent.org/docs/latest/policy-language/#unification-) on the official docs.
 
 Now, with the `expiry_time` set for our example tokens, we can now create JWTS for the Fleet Supervisor and Ship Captain
@@ -119,7 +119,7 @@ To obtain the Fleet Supervisor's JWT (`spv_token`), try using the
 [opa eval](https://www.openpolicyagent.org/docs/latest/cli/#opa-eval) command by running OPA in a Docker container:
 
 ```shell
-docker run --rm -v ${LAB_DIR}:/example openpolicyagent/opa:0.57.0 eval \
+docker run --rm -v ${LAB_DIR}:/example openpolicyagent/opa:latest eval \
   -d /example/create_jwt.rego 'data.example.jwt.spv_token' | jq '.result[0].expressions[0].value'
 ```
 
@@ -198,7 +198,7 @@ demo by building the policy and data bundle.
 To do so, run the following docker command:
 
 ```shell
-docker run --rm -v ${LAB_DIR}:/example openpolicyagent/opa:0.57.0 build \
+docker run --rm -v ${LAB_DIR}:/example openpolicyagent/opa:latest build \
     --bundle /example/bundle \
     -o /example/bundle.tar.gz
 ```
@@ -207,7 +207,7 @@ If you are running [rootless docker](https://docs.docker.com/engine/security/roo
 to root to enable writing to the directory.
 
 ```shell
-docker run --rm --user 0:0 -v ${LAB_DIR}:/example openpolicyagent/opa:0.57.0 build \
+docker run --rm --user 0:0 -v ${LAB_DIR}:/example openpolicyagent/opa:latest build \
     --bundle /example/bundle \
     -o /example/bundle.tar.gz
 ```
@@ -221,7 +221,7 @@ Now, to get OPA up and running locally, we will run OPA as a server in a Docker 
 
 ```shell
 docker run --name opa-server --rm -p 8181:8181 -d -v ${LAB_DIR}:/example \
-    openpolicyagent/opa:0.57.0 run --server \
+    openpolicyagent/opa:latest run --server \
     --bundle /example/bundle.tar.gz \
     --addr 0.0.0.0:8181
 ```
@@ -267,7 +267,7 @@ and re-usability.
 To do this for the Fleet Supervisor token (`spv_jwt`), run:
 
 ```shell
-export SPV_JWT=$(docker run -v ${LAB_DIR}:/example openpolicyagent/opa:0.57.0 eval \
+export SPV_JWT=$(docker run -v ${LAB_DIR}:/example openpolicyagent/opa:latest eval \
   -d /example/create_jwt.rego 'data.example.jwt.spv_token' | jq '.result[0].expressions[0].value')
 ```
 
@@ -290,7 +290,7 @@ jq -R 'split(".") | .[1] | @base64d | fromjson' <<< $SPV_JWT
 To do this for the Ship Captain token (`cpt_jwt`), run:
 
 ```shell
-export CPT_JWT=$(docker run -v ${LAB_DIR}:/example openpolicyagent/opa:0.57.0 eval \
+export CPT_JWT=$(docker run -v ${LAB_DIR}:/example openpolicyagent/opa:latest eval \
   -d /example/create_jwt.rego 'data.example.jwt.cpt_token' | jq '.result[0].expressions[0].value')
 ```
 

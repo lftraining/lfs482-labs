@@ -24,11 +24,13 @@ spec:
           # This is a small image with wait-for-it, choose whatever image
           # you prefer that waits for a service to be up. This image is built
           # from https://github.com/lqhl/wait-for-it
-          image: cgr.dev/chainguard/wait-for-it:latest
+          image: chainguard/wait-for-it:latest
+          imagePullPolicy: Never
           args: ["-t", "30", "coastal-containers-control-plane:8081"]
       containers:
         - name: spire-root-agent
-          image: ghcr.io/spiffe/spire-agent:1.8.0
+          image: spiffe/spire-agent:latest
+          imagePullPolicy: Never
           args: ["-expandEnv", "-config", "/run/spire/config/agent.conf"]
           env:
             - name: MY_NODE_NAME

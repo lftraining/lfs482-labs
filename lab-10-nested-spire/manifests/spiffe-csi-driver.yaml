@@ -26,8 +26,8 @@ spec:
       serviceAccountName: spiffe-csi-driver
       containers:
         - name: spiffe-csi-driver
-          image: ghcr.io/spiffe/spiffe-csi-driver:nightly
-          imagePullPolicy: IfNotPresent
+          image: spiffe/spiffe-csi-driver:latest
+          imagePullPolicy: Never
           args: ["-workload-api-socket-dir", "/run/spire/sockets", "-csi-socket-path", "/spiffe-csi/csi.sock"]
           env:
             - name: MY_NODE_NAME
@@ -50,8 +50,8 @@ spec:
                 - all
             privileged: true
         - name: node-driver-registrar
-          image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.6.0
-          imagePullPolicy: IfNotPresent
+          image: sig-storage/csi-node-driver-registrar:latest
+          imagePullPolicy: Never
           args: ["-csi-address", "/spiffe-csi/csi.sock", "-kubelet-registration-path", "/var/lib/kubelet/plugins/csi.spiffe.io/csi.sock"]
           volumeMounts:
             - mountPath: /spiffe-csi

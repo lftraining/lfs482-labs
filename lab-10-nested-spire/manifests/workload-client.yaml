@@ -21,7 +21,7 @@ spec:
       containers:
         - name: client
           image: client:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never
           volumeMounts:
             - name: spire-agent-socket
               mountPath: /spire-agent-socket

@@ -1,16 +1,18 @@
-FROM golang:1.21.1-alpine3.18 AS builder
+ARG GOLANG_BUILDER_IMAGE
+ARG GOLANG_IMAGE
 
-WORKDIR build
+FROM $GOLANG_BUILDER_IMAGE AS BUILDER
 
-COPY main.go .
-COPY go.mod .
-COPY go.sum .
+WORKDIR /app
 
+COPY go.* ./
 RUN go mod download
-RUN go build main.go
 
-FROM scratch
+COPY *.go ./
+RUN go build -o /workload
 
-COPY --from=builder /go/build/main /main
+FROM $GOLANG_IMAGE
 
-ENTRYPOINT ["/main"]
+COPY --from=BUILDER /workload /workload
+
+ENTRYPOINT ["/workload"]

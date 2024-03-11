@@ -1,14 +1,18 @@
-FROM golang:1.21.1
+ARG GOLANG_BUILDER_IMAGE
+ARG GOLANG_IMAGE
 
-LABEL authors="ric"
+FROM $GOLANG_BUILDER_IMAGE AS BUILDER
 
-WORKDIR build
+WORKDIR /app
 
-COPY go.mod go.sum ./
+COPY go.* ./
 RUN go mod download
 
 COPY *.go ./
+RUN go build -o /workload
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /workload
+FROM $GOLANG_IMAGE
 
-CMD ["/workload"]
+COPY --from=BUILDER /workload /workload
+
+ENTRYPOINT ["/workload"]

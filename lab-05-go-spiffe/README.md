@@ -25,18 +25,6 @@ This hands-on exercise is based on the
 - Understand the `go-spiffe` listening and dialoging logic for SPIFFE-aware mTLS communication.
 - Learn how `go-spiffe` interacts with the Workload API to manage SVIDs.
 
-## Preparing your Environment
-
-Before you cast off, prepare your ships to sail by setting your working directory in
-[lab-05-go-spiffe](../lab-05-go-spiffe) as an environment variable:
-
-```bash
-export LAB_DIR=$(pwd)
-```
-
-This will make issuing commands easier in the following steps of this exercise, and will reduce the possibility of
-reference errors.
-
 ## Step-by-Step Instructions
 
 ### Step 1: Provision Infrastructure
@@ -48,22 +36,26 @@ lab directory:
 make cluster-up
 ```
 
-If your cluster is already running, you can skip this step and continue on with the lab.
+### Step 2: Deploy SPIRE to the Cluster
 
-### Step 2: Deploying the SPIRE Setup
-
-Initialize the SPIRE setup to your Kubernetes cluster and create the initial node registration entry:
+Initialize the SPIRE setup to your Kubernetes cluster:
 
 ```shell
-make deploy-spire register-agent
+make deploy-spire spire-wait-for-agent
+```
+
+The SPIRE configuration is identical to the previous lab. We will also create SPIRE registration entries for the SPIRE
+agent, the server workload, and the client workload. These are the same as in previous labs so for convenience run the
+following command:
+
+```shell
+make create-registration-entries
 ```
 
 Once finished, you should see the output:
 
-```log
-SPIRE deployed on the cluster.
-...
-Entry ID         : a23f5538-74d6-4401-9cc1-dc82c870e15b
+```shell
+Entry ID         : 01de1c15-ef71-4834-b702-455d70586212
 SPIFFE ID        : spiffe://coastal-containers.example/agent/spire-agent
 Parent ID        : spiffe://coastal-containers.example/spire/server
 Revision         : 0
@@ -72,32 +64,29 @@ JWT-SVID TTL     : default
 Selector         : k8s_psat:agent_ns:spire
 Selector         : k8s_psat:agent_sa:spire-agent
 Selector         : k8s_psat:cluster:kind-kind
+
+Entry ID         : 05b21cc2-4e90-4aad-8b48-419fd9938678
+SPIFFE ID        : spiffe://coastal-containers.example/workload/server
+Parent ID        : spiffe://coastal-containers.example/agent/spire-agent
+Revision         : 0
+X509-SVID TTL    : default
+JWT-SVID TTL     : default
+Selector         : k8s:ns:default
+Selector         : k8s:sa:server
+
+Entry ID         : f7f36f9c-c73e-42ef-bb15-3d0f12a43f1d
+SPIFFE ID        : spiffe://coastal-containers.example/workload/client
+Parent ID        : spiffe://coastal-containers.example/agent/spire-agent
+Revision         : 0
+X509-SVID TTL    : default
+JWT-SVID TTL     : default
+Selector         : k8s:ns:default
+Selector         : k8s:sa:client
 ```
-
-This command will spin-up the `spire-server`, `spiffe-csi-driver`, and `spire-agent` in the `spire` namespace.
-Additionally, this command will also create the initial node registration entry. To view the running SPIRE set-up on
-your kubernetes cluster, run:
-
-```shell
-kubectl get pods -n spire
-```
-
-After issuing the `kubectl` command, you should see your running SPIRE setup in an output similar to:
-
-```log
-NAME                      READY   STATUS    RESTARTS   AGE
-spiffe-csi-driver-xpp4c   2/2     Running   0          72s
-spire-agent-fjxw5         1/1     Running   0          67s
-spire-server-0            1/1     Running   0          86s
-```
-
-It is important to note that the node registration entry initializes the
-`spiffe://coastal-containers.example/agent/spire-agent` SPIFFE ID, which is later used as the `parentID` for the
-client/server workload registration entries.
 
 ### Step 3: Explore the Server Workload
 
-You can see the `go-spiffe` logic within the [main.go](./workload/server/main.go) file that the server uses to interact
+You can see the `go-spiffe` logic within the [main.go](server/main.go) file that the server uses to interact
 with the Workload API and listen for incoming client connections, only accepting client(s) that present a valid
 X509-SVID with a matching SPIFFE ID.
 
@@ -127,7 +116,7 @@ with a matching SPIFFE ID (`clientID`).
 
 - The `spiffetls.Listen` function uses the `SPIFFE_ENDPOINT_SOCKET` environment variable to locate the Workload API
 address, obtaining the SVIDs needed for establishing secure communication. This environment variable is set within the
-[deploy-server.yaml](./config/deploy-server.yaml) manifest.
+[deploy-server.yaml](spire-server/deploy-server.yaml) manifest.
 
 📝Note: Detailed explanations about the underlying logic are provided in the
 [go-spiffe tls example](https://github.com/spiffe/go-spiffe/tree/main/v2/examples/spiffe-tls) and can be found within
@@ -135,7 +124,7 @@ the associated [API documentation](https://pkg.go.dev/github.com/spiffe/go-spiff
 
 ### Step 4: Explore the Client Workload
 
-You can see the `go-spiffe` logic within the [main.go](./workload/client/main.go) file that the client uses to dial and
+You can see the `go-spiffe` logic within the [main.go](client/main.go) file that the client uses to dial and
 establish a connection with the server, only accepting server(s) that present a valid X509-SVID with a matching SPIFFE
 ID.
 
@@ -166,7 +155,7 @@ X509-SVID with the expected SPIFFE ID (`serverID`).
 
 - The `spiffetls.Dial` function uses the `SPIFFE_ENDPOINT_SOCKET` environment variable to locate the Workload API
 address, obtaining the SVIDs needed for establishing secure communication to the server. This environment variable is
-set within the [deploy-client.yaml](./config/deploy-client.yaml) manifest.
+set within the [client](client/app.yaml) manifest.
 
 📝Note: Detailed explanations about the underlying logic are provided in the
 [go-spiffe tls example](https://github.com/spiffe/go-spiffe/tree/main/v2/examples/spiffe-tls) and can be found within
@@ -179,97 +168,34 @@ X509-SVIDs, thus simplifying the setup of mutual authentication and secure commu
 
 ### Step 5: Build and Load Workload Images
 
-First, navigate to the root [lab-05-go-spiffe](../lab-05-go-spiffe) directory:
+Build and load the `server` and `client` workload image by running the make command:
 
 ```shell
-cd ${LAB_DIR}
+make workload-images
 ```
 
-Next, build and load the `server` workload image by running the make command:
-
-```shell
-make cluster-build-load-image DIR=workload/server
-```
-
-After this, build and load the `client` workload image by running the make command:
-
-```shell
-make cluster-build-load-image DIR=workload/client
-```
-
-Keep in mind that this will create docker images for the server and client workloads with the `workload/server:latest`
-and `workload/client:latest` tags. It will also automatically load the created images into your kind cluster for you.
-You can check the created docker images using the command:
-
-```shell
-docker images
-```
-
-### Step 6: Create Workload Registration Entries
-
-Before deploying the workloads, register them within the `spire-server`.
-
-For the `server` workload, run:
-
-```shell
-kubectl exec -n spire spire-server-0 -- /opt/spire/bin/spire-server entry create \
-		-spiffeID spiffe://coastal-containers.example/workload/server \
-		-parentID spiffe://coastal-containers.example/agent/spire-agent \
-		-selector k8s:ns:default \
-		-selector k8s:sa:server
-```
-
-For the `client` workload, run:
-
-```shell
-kubectl exec -n spire spire-server-0 -- /opt/spire/bin/spire-server entry create \
-		-spiffeID spiffe://coastal-containers.example/workload/client \
-		-parentID spiffe://coastal-containers.example/agent/spire-agent \
-		-selector k8s:ns:default \
-		-selector k8s:sa:client
-```
-
-If the commands are successful, they should output the created registration entry for both workloads.
-
-### Step 7: Deploy the Server Workload
+### Step 6: Deploy the Workloads
 
 While still within the root [lab-05-go-spiffe](../lab-05-go-spiffe) directory, deploy the server workload to your kind
 cluster:
 
 ```shell
-make deploy-server
+make deploy-workloads
 ```
 
-This will apply the [deploy-server.yaml](./config/deploy-server.yaml) manifest which creates a service, service account,
-and deployment for the `server` workload. If everything was successful, you should see the running `server` workload
-when you run:
+Check the workloads by running the following command:
 
 ```shell
 kubectl get pods
 ```
-
-### Step 8: Deploy the Client Workload
-
-While still within the root [lab-05-go-spiffe](../lab-05-go-spiffe) directory, deploy the client workload to your kind
-cluster:
-
-```shell
-make deploy-client
-```
-
-This will apply the [deploy-client.yaml](./config/deploy-client.yaml) manifest which creates a service account and
-deployment for the `client` workload. If everything was successful, you should see the running (or completed) `client`
-workload when you run:
-
-```shell
-kubectl get pods
-```
+If everything was successful, you should see the running `server` workload and see the running (or completed) `client`
+workload.
 
 ⚠️ Note: The `client` pod will likely show the status of `Completed` as due to the nature of containers, they are meant
 to run a process or task and quit thereafter. In this case, the `client` will restart a number of times as it
 successfully sends the intended message to the `server` workload, receives a reply, and exits. This is expected behavior.
 
-### Step 9: Observe Client-Server Handshake
+### Step 7: Observe Client-Server Handshake
 
 Now, observe the logs for the `server` and `client`, ensuring the `client` sends the intended message, and the `server`
 responds back.
@@ -300,19 +226,12 @@ Client connected to server:443
 Port Authority says: "Request received SS Coastal Carrier. You are cleared to dock.\n"
 ```
 
-### Step 10: Cleanup
+### Step 8: Cleanup
 
-As the following lab exercises will use the same cluster, tear down the SPIRE setup and workload deployments from this
-lab by running:
-
-```shell
-cd $LAB_DIR && make tear-down
-```
-
-To tear down the entire Kind cluster, run:
+To tear down the Kind cluster, run:
 
 ```shell
-cd $LAB_DIR && make cluster-down
+make cluster-down
 ```
 
 ## Conclusion

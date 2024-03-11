@@ -30,7 +30,8 @@ spec:
       serviceAccountName: client
       initContainers:
         - name: agent
-          image: ghcr.io/spiffe/spire-agent:1.8.0
+          image: spiffe/spire-agent:latest
+          imagePullPolicy: Never
           command: ["/opt/spire/bin/spire-agent", "api", "fetch", "x509", "-write", "/tmp/svids", "-socketPath", "/spire-agent-socket/agent.sock"]
           volumeMounts:
             - name: spire-agent-socket
@@ -41,7 +42,7 @@ spec:
       containers:
         - name: client
           image: client:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never
           volumeMounts:
             - name: svids
               mountPath: /var/run/secrets/svids

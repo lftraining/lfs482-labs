@@ -1,0 +1,19 @@
+apiVersion: projectcontour.io/v1
+kind: HTTPProxy
+metadata:
+  name: frontend
+  namespace: manual
+spec:
+  virtualhost:
+    fqdn: localhost
+    tls:
+      secretName: ingress
+  routes:
+    - conditions:
+        - prefix: /
+      services:
+        - name: frontend
+          port: 443
+          validation:
+            caSecret: frontend
+            subjectName: frontend

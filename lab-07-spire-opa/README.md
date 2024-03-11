@@ -77,18 +77,6 @@ communication is securely encrypted with mTLS.
 Join us in this lab as we navigate through the implementation and testing of this secure integration, ensuring that the
 treasures of vessel manifest data are shielded from the marauding pirates of the digital sea! 🏴‍☠️🌊🔐
 
-### Preparing Your Environment
-
-Before you cast off, prepare your ships to sail by setting your working directory in
-[lab-07-spire-opa](../lab-07-spire-opa) as an environment variable:
-
-```bash
-export LAB_DIR=$(pwd)
-```
-
-This will make issuing commands easier in the following steps of this exercise, and will reduce the possibility of
-reference errors.
-
 ## Step-by-Step Instructions
 
 ### Step 1: Provision Infrastructure
@@ -100,23 +88,16 @@ lab directory
 make cluster-up
 ```
 
-If your cluster is already running, you can skip this step and continue on with the lab.
-
 ### Step 2: Deploy SPIRE to the Cluster
 
-Create the `spire` namespace and deploy the `spire-server`, `spire-agent`, `spiffe-csi-driver`, and create the initial
-node registration entry:
-
 ```shell
-make deploy-spire register-agent
+make deploy-spire create-registration-entries
 ```
 
-If this completed as-expected, and SPIRE is deployed to your cluster, should see the output:
+If this completed as-expected you should see the following registration entries have been created:
 
-```log
-SPIRE deployed on the cluster.
-...
-Entry ID         : 138d8eab-3b09-40d8-a531-bae10a9f2d4d
+```shell
+Entry ID         : bace24d7-8204-4783-8990-099643ab90d4
 SPIFFE ID        : spiffe://coastal-containers.example/agent/spire-agent
 Parent ID        : spiffe://coastal-containers.example/spire/server
 Revision         : 0
@@ -125,6 +106,50 @@ JWT-SVID TTL     : default
 Selector         : k8s_psat:agent_ns:spire
 Selector         : k8s_psat:agent_sa:spire-agent
 Selector         : k8s_psat:cluster:kind-kind
+
+Entry ID         : b72f5d81-bf62-44fe-8cd9-590925635f71
+SPIFFE ID        : spiffe://coastal-containers.example/app/manifest/database
+Parent ID        : spiffe://coastal-containers.example/agent/spire-agent
+Revision         : 0
+X509-SVID TTL    : default
+JWT-SVID TTL     : default
+Selector         : k8s:container-name:envoy
+Selector         : k8s:ns:default
+Selector         : k8s:pod-label:app:postgres
+Selector         : k8s:sa:default
+
+Entry ID         : d034cdb0-06ee-44be-ad74-660eac553283
+SPIFFE ID        : spiffe://coastal-containers.example/app/manifest/server
+Parent ID        : spiffe://coastal-containers.example/agent/spire-agent
+Revision         : 0
+X509-SVID TTL    : default
+JWT-SVID TTL     : default
+Selector         : k8s:container-name:envoy
+Selector         : k8s:ns:default
+Selector         : k8s:pod-label:app:server
+Selector         : k8s:sa:default
+
+Entry ID         : a9352e9e-ce57-4369-bc5d-357d1d843fa7
+SPIFFE ID        : spiffe://coastal-containers.example/app/manifest/pilot-boat-0
+Parent ID        : spiffe://coastal-containers.example/agent/spire-agent
+Revision         : 0
+X509-SVID TTL    : default
+JWT-SVID TTL     : default
+Selector         : k8s:container-name:envoy
+Selector         : k8s:ns:default
+Selector         : k8s:pod-label:app:pilot-boat-0
+Selector         : k8s:sa:default
+
+Entry ID         : f453be5b-3300-486b-a7be-7787aeec4cd5
+SPIFFE ID        : spiffe://coastal-containers.example/app/manifest/pilot-boat-1
+Parent ID        : spiffe://coastal-containers.example/agent/spire-agent
+Revision         : 0
+X509-SVID TTL    : default
+JWT-SVID TTL     : default
+Selector         : k8s:container-name:envoy
+Selector         : k8s:ns:default
+Selector         : k8s:pod-label:app:pilot-boat-1
+Selector         : k8s:sa:default
 ```
 
 ### Step 3: Build and Load the Server Image
@@ -132,7 +157,7 @@ Selector         : k8s_psat:cluster:kind-kind
 Build and load the vessel manifest server image by running:
 
 ```shell
-make cluster-build-load-image DIR=workload/server
+make cluster-build-load-image DIR=server
 ```
 
 The vessel manifest `server` is the north star of our digital ship, steering the management and access of the vessel
@@ -164,7 +189,7 @@ liaison between the user requests and the stored data in the PostgreSQL `databas
 By executing the `make cluster-build-load-image DIR=workload/server` command, we build the Docker image of our server
 and load it into our kind cluster. This ensures that the server, with all its functionalities and integrations, is
 packaged and ready to be deployed within our Kubernetes environment. If you would like to investigate the functionality
-of the server workload, review the files contained within the [workload/server](./workload/server) directory.
+of the server workload, review the files contained within the [server](server) directory.
 
 In the subsequent steps, we'll navigate through deploying this server and ensuring that it sails smoothly within our
 charted architecture map.
@@ -174,37 +199,36 @@ charted architecture map.
 In order to supply the vessel manifest `server` and `database` with the required Envoy and OPA configuration, we will
 need to pass these files as Kubernetes configmaps.
 
-For the vessel manifest `server`, we will need configmaps to store the [envoy.yaml](./config/server/envoy/envoy.yaml),
-[opa-config.yaml](./config/server/opa/opa-config.yaml), and [opa-policy.rego](./config/server/opa/opa-policy.rego)
+For the vessel manifest `server`, we will need configmaps to store the [envoy.yaml](server/envoy/envoy.yaml),
+[opa-config.yaml](server/opa/opa-config.yaml), and [opa-policy.rego](server/opa/opa-policy.rego)
 files. Functionally, we will be creating two configmaps for this purpose, `server-envoy` to hold the
-[envoy.yaml](./config/server/envoy/envoy.yaml), and `opa-policy` to hold the
-[opa-config.yaml](./config/server/opa/opa-config.yaml) / [opa-policy.rego](./config/server/opa/opa-policy.rego) files.
+[envoy.yaml](server/envoy/envoy.yaml), and `opa-policy` to hold the
+[opa-config.yaml](server/opa/opa-config.yaml) / [opa-policy.rego](server/opa/opa-policy.rego) files.
 
 For the vessel manifest `database`, we will need a configmap to store the
-[envoy.yaml](./config/database/envoy/envoy.yaml) file. Functionally, this proxy configuration will be stored in the
+[envoy.yaml](database/envoy/envoy.yaml) file. Functionally, this proxy configuration will be stored in the
 `database-envoy` configmap.
 
 
 To begin, first create the `server-envoy` configmap for the vessel manifest server:
 
 ```shell
-kubectl create configmap server-envoy --from-file=config/server/envoy/envoy.yaml
+kubectl create configmap server-envoy --from-file=server/envoy/envoy.yaml
 ```
 
 Next, create the `opa-policy` configmap for the vessel manifest server:
 
 ```shell
-kubectl create configmap opa-policy --from-file=config/server/opa/opa-policy.rego \
-  --from-file=config/server/opa/opa-config.yaml
+kubectl create configmap opa-policy --from-file=server/opa/opa-policy.rego --from-file=server/opa/opa-config.yaml
 ```
 
-*📝Note: The `opa-policy` configmap is used to hold both the [opa-config.yaml](./config/server/opa/opa-config.yaml) and
-[opa-policy.rego](./config/server/opa/opa-policy.rego) files, passing them into the `server` via a mounted volume.*
+*📝Note: The `opa-policy` configmap is used to hold both the [opa-config.yaml](server/opa/opa-config.yaml) and
+[opa-policy.rego](server/opa/opa-policy.rego) files, passing them into the `server` via a mounted volume.*
 
 After this, create the `database-envoy` configmap for the vessel manifest `database`:
 
 ```shell
-kubectl create configmap database-envoy --from-file=config/database/envoy/envoy.yaml
+kubectl create configmap database-envoy --from-file=database/envoy/envoy.yaml
 ```
 
 These ConfigMaps will be mounted into the respective pods, providing the necessary configurations for Envoy and OPA to
@@ -300,7 +324,7 @@ management. You can also notice the use of the SDS module within the `spire_agen
 
 **OPA Configuration:**
 
-The [opa-config.yaml](./config/server/opa/opa-config.yaml) file defines how OPA should be configured within the system,
+The [opa-config.yaml](server/opa/opa-config.yaml) file defines how OPA should be configured within the system,
 particularly regarding its interaction with Envoy for policy enforcement.
 
 Key components of this configuration include:
@@ -330,7 +354,7 @@ OPA is configured to run the Envoy External Authorization gRPC server on port `8
 
 **OPA Policies:**
 
-The [opa-policy.rego](./config/server/opa/opa-policy.rego) file contains the actual policy logic written in
+The [opa-policy.rego](server/opa/opa-policy.rego) file contains the actual policy logic written in
 [Rego language](https://www.openpolicyagent.org/docs/latest/policy-language/), which OPA will enforce.
 
 Key components of this configuration include:
@@ -373,7 +397,7 @@ This can also be verified by running:
 kubectl get pods
 ```
 
-The ouput of this command should show the running `postgres` pod, like shown here:
+The output of this command should show the running `postgres` pod, like shown here:
 
 ```log
 NAME                        READY   STATUS    RESTARTS   AGE
@@ -400,7 +424,7 @@ This can also be verified by running:
 kubectl get pods
 ```
 
-The ouput of this command should show the running `server` and `postgres` pod, like shown here:
+The output of this command should show the running `server` and `postgres` pod, like shown here:
 
 ```log
 NAME                        READY   STATUS    RESTARTS      AGE
@@ -408,9 +432,7 @@ postgres-67769c7cb6-gkvdz   2/2     Running   0             50s
 server-6b5f6c6d69-66v4x     3/3     Running   2 (16s ago)   21s
 ```
 
-Once this step complete, the vessel manifest server and database should be running with issued SVIDs. Assigned SVIDs are
-created by the registration entry commands within the provided [Makefile](./Makefile), which works to register the
-SPIFFE IDs:
+Once this step complete, the vessel manifest server and database should be running with issued SVIDs:
 
 - `spiffe://coastal-containers.example/app/manifest/server` for the server.
 - `spiffe://coastal-containers.example/app/manifest/database` for the database.
@@ -429,8 +451,8 @@ To answer these questions, let's deploy both workloads.
 First, we need to deploy their associated envoy configmaps:
 
 ```shell
-kubectl create configmap pilot-boat-0-envoy --from-file=config/pilot-boat/pilot-boat-0/envoy/envoy.yaml
-kubectl create configmap pilot-boat-1-envoy --from-file=config/pilot-boat/pilot-boat-1/envoy/envoy.yaml
+kubectl create configmap pilot-boat-0-envoy --from-file=pilot-boat-0/envoy/envoy.yaml
+kubectl create configmap pilot-boat-1-envoy --from-file=pilot-boat-1/envoy/envoy.yaml
 ```
 
 Next, we can create the workloads by running:
@@ -477,7 +499,7 @@ You can view the opa decision log by executing the following command
 kubectl logs -l=app=server -c opa | tail -1 | jq
 ```
 
-If you cross reference the [opa-policy.rego](config/server/opa/opa-policy.rego), you can see `GET` request from
+If you cross reference the [opa-policy.rego](server/opa/opa-policy.rego), you can see `GET` request from
 `pilot-boat-0` should be allowed, and this can be seen in the decision log.
 
 ```json
@@ -525,7 +547,7 @@ You should see the expected output:
 ```
 
 This output indicates that the curl `GET` request was unsuccessful due to the policy defined in our
-[opa-policy.rego](./config/server/opa/opa-policy.rego) file. The resulting AuthZ enforcement decision occurs due to the
+[opa-policy.rego](server/opa/opa-policy.rego) file. The resulting AuthZ enforcement decision occurs due to the
 fact that our rego policy will **ONLY** allow requests from the
 `spiffe://coastal-containers.example/app/manifest/pilot-boat-0` SPIFFE ID registered to `pilot-boat-0`. As the `GET`
 request was unsuccessful, the `curl` container gracefully terminated and deleted after
@@ -569,24 +591,17 @@ examples and scenarios for deploying SPIRE and integrating it peripheral tooling
 
 Additionally, you can try expanding on this demo by setting up more client workloads which send various CRUD requests
 (e.g. `GET`, `PUT`, and `DELETE`) to the vessel manifest `server`. Issue a registration entry to create their SVIDs,
-making sure to add them to an `allow` rule within the [opa-policy.rego](./config/server/opa/opa-policy.rego) file. Once
+making sure to add them to an `allow` rule within the [opa-policy.rego](server/opa/opa-policy.rego) file. Once
 this is done, try testing your client's capabilities to issue various requests to the vessel manifest `server`. Can you
 get it working, and are you able to issue requests from invalid SVIDs that aren't within the scope of the defined Rego
 policy?
 
 ### Step 10: Cleanup
 
-As the following lab exercises will use the same cluster, tear down the SPIRE setup and server/database workload
-deployments from this lab by running:
+To tear down the Kind cluster, run:
 
 ```shell
-cd $LAB_DIR && make tear-down
-```
-
-To tear down the entire Kind cluster, run:
-
-```shell
-cd $LAB_DIR && make cluster-down
+make cluster-down
 ```
 
 ## Conclusion

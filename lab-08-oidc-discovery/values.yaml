@@ -1,18 +1,29 @@
 global:
   spire:
-    clusterName: good-ship-lollipop
+    clusterName: kind-kind
     jwtIssuer: 127.0.0.1.nip.io
-    trustDomain: coastal-containers.io
+    trustDomain: coastal-containers.example
 spire-server:
   ca_subject:
     country: UK
-    organization: Coastal Containers Ltd
-    common_name: coastal-containers.io
+    organization: CoastalContainers
+    common_name: Coastal Containers Ltd
   controllerManager:
     enabled: true
+    image:
+      registry: ""
+      pullPolicy: Never
+      tag: latest
   defaultJwtSvidTTL: 15m
+  image:
+    registry: ""
+    pullPolicy: Never
+    tag: latest
 spiffe-oidc-discovery-provider:
   enabled: true
+  tls:
+    spire:
+      enabled: false
   insecureScheme:
     enabled: true
   ingress:
@@ -30,3 +41,32 @@ spiffe-oidc-discovery-provider:
       - secretName: oidc-discovery
         hosts:
           - 127.0.0.1.nip.io
+  image:
+    registry: ""
+    pullPolicy: Never
+    tag: latest
+  spiffeHelper:
+    image:
+      registry: ""
+      pullPolicy: Never
+      tag: latest
+spire-agent:
+  image:
+    registry: ""
+    pullPolicy: Never
+    tag: latest
+  waitForIt:
+    image:
+      registry: ""
+      pullPolicy: Never
+      tag: latest
+spiffe-csi-driver:
+  image:
+    registry: ""
+    pullPolicy: Never
+    tag: latest
+  nodeDriverRegistrar:
+    image:
+      registry: ""
+      pullPolicy: Never
+      tag: latest

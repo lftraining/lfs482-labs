@@ -28,16 +28,6 @@ Ltd. is safeguarded against swashbucklin' pirates up to no good! So, brace yours
 thrilling journey where technology meets adventure, and where we, the crew of Coastal Containers Ltd., strive to secure
 our legacy for the future generations to come! 🌊🔐🏴‍☠️
 
-### Preparing Your Environment
-
-Before you cast off, prepare your ship to sail by setting up your working environment. If you haven't yet done so, make
-sure you've cloned the lab repository to your local system. After that, you'll be working from the
-[lab-08-oidc-discovery](../lab-08-oidc-discovery) directory.
-
-```bash
-export LAB_DIR=$(pwd)
-```
-
 ## Step-by-Step Instructions
 
 ### Step 1: Provision Infrastructure
@@ -50,8 +40,6 @@ infrastructure, including [cert-manager](https://github.com/cert-manager/cert-ma
 make cluster-up
 ```
 
-You can skip this step if you have already setup the cluster.
-
 ### Step 2: Setup SPIRE with Helm
 
 Before you deploy SPIRE via the Helm chart, you must first add the SPIFFE helm repo by running:
@@ -63,41 +51,37 @@ make spire-add-helm-repo
 Once added, install SPIRE via helm by running:
 
 ```shell
-make spire-helm-install
+make spire-helm-install spire-wait-for-agent
 ```
 
 If everything worked properly, you should see:
 
 ```log
+🏗️ Installing SPIRE using Helm...
+NAME: spire-crds
+LAST DEPLOYED: Thu Mar  7 15:07:12 2024
+NAMESPACE: spire
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
 NAME: spire
-LAST DEPLOYED: Tue Oct 24 14:39:08 2023
+LAST DEPLOYED: Thu Mar  7 15:07:13 2024
 NAMESPACE: spire
 STATUS: deployed
 REVISION: 1
 NOTES:
 Installed spire…
-```
 
-To further ensure SPIRE is up and running, run the following `kubectl` command:
-
-```shell
-kubectl get pods -n spire
-```
-
-You should see the running `spire-server`, `spire-agent`, `spire-spiffe-csi-driver`, and
-`spire-spiffe-oidc-discovery-provider` pods as shown here:
-
-```log
-NAME                                                    READY   STATUS    RESTARTS   AGE
-spire-agent-qnmsk                                       1/1     Running   0          2m32s
-spire-server-0                                          2/2     Running   0          2m32s
-spire-spiffe-csi-driver-25cxx                           2/2     Running   0          2m32s
-spire-spiffe-oidc-discovery-provider-5ccc6bb54c-kjfct   2/2     Running   0          2m32s
+Spire CR's will be handled only if className is set to "spire-spire"
+✔️ SPIRE installed using Helm.
+pod/spire-agent-qbc9q condition met
 ```
 
 ### Step 3: View SPIRE Configuration
 
 With SPIRE deployed and running on your cluster, let's analyze the SPIRE Server and Agent configuration files.
+
+#### SPIRE Server Configuration
 
 To first inspect the `spire-server` config, run the following `make` command:
 
@@ -105,28 +89,36 @@ To first inspect the `spire-server` config, run the following `make` command:
 make spire-view-server-config
 ```
 
-#### SPIRE Server Configuration
+The key differences from what we have seen before are shown below.
 
-The SPIRE Server configuration provides the foundation for the SPIRE infrastructure. Here's a breakdown:
+```json
+{
+  "server": {
+    "jwt_issuer": "127.0.0.1.nip.io"
+  },
+  "plugins": {
+    "KeyManager": [
+      {
+        "disk": {
+          "plugin_data": {
+            "keys_path": "/run/spire/data/keys.json"
+          }
+        }
+      }
+    ]
+  }
+}
+```
 
-- `health_checks`: This section defines the health check parameters for the SPIRE server. It specifies the bind address,
-port, and the paths for liveness and readiness probes.
-- `plugins`: This section outlines the plugins used by the SPIRE server. It includes:
-  - `DataStore`: Specifies the type of database (SQLite3) and its connection string.
-  - `KeyManager`: Defines where the keys are stored (on disk) and their path.
-  - `NodeAttestor`: Configures the Kubernetes PSAT (Projected Service Account Token) attestor and the allowed service accounts.
-  - `Notifier`: Configures the Kubernetes bundle notifier, specifying the config map and namespace.
-- `server`: This section contains the main configuration for the SPIRE server:
-  - `bind_address` and `bind_port`: The address and port where the SPIRE server will listen.
-  - `ca_key_type`: The type of key used for the Certificate Authority (CA).
-  - `ca_subject`: The subject for the CA certificate.
-  - `ca_ttl`: The time-to-live (TTL) for the CA certificate.
-  - `data_dir`: The directory where SPIRE data is stored.
-  - `default_jwt_svid_ttl`: The default TTL for JWT SVIDs.
-  - `default_x509_svid_ttl`: The default TTL for X.509 SVIDs.
-  - `jwt_issuer`: The issuer for JWTs, set to `127.0.0.1.nip.io` in our case.
-  - `log_level`: The logging level for the SPIRE server.
-  - `trust_domain`: The trust domain for the SPIRE server.
+- The Helm chart defaults to using the
+  [disk KeyManager](https://github.com/spiffe/spire/blob/v1.9.0/doc/plugin_server_keymanager_disk.md)
+- We have configured the `jwt_issuer` field for the server
+
+We have used `127.0.0.1.nip.io` as this will resolve to local host when we use curl to walk through the OIDC Discovery
+protocol in [Step 5: OIDC Discovery Walkthrough](#step-5-oidc-discovery-walkthrough). [nip.io](https://nip.io/) is a
+free service to map DNS names to any IP Address.
+
+#### SPIRE Agent Configuration
 
 Next, view the running `spire-agent` configuration by issuing:
 
@@ -134,39 +126,47 @@ Next, view the running `spire-agent` configuration by issuing:
 make spire-view-agent-config
 ```
 
-#### SPIRE Agent Configuration
+```json
+{
+  "plugins": {
+    "KeyManager": [
+      {
+        "disk": {
+          "plugin_data": {
+            "keys_path": "/run/spire/data/keys.json"
+          }
+        }
+      }
+    ]
+  }
+}
+```
 
-The SPIRE Agent configuration connects workloads to the SPIRE Server. Key components include:
+- The Helm chart defaults to using the
+  [disk KeyManager](https://github.com/spiffe/spire/blob/v1.9.0/doc/plugin_agent_keymanager_disk.md)
 
-- `agent`: Main configuration for the SPIRE agent, including the server's address and port, the agent's data directory,
-and the trust domain.
-- `health_checks`: Defines the health check parameters for the SPIRE agent.
-- `plugins`: Outlines the plugins used by the SPIRE agent:
-  - `KeyManager`: Specifies that keys are stored in memory.
-  - `NodeAttestor`: Configures the Kubernetes PSAT attestor.
-  - `WorkloadAttestor`: Configures the Kubernetes workload attestor.
+The rest of the configuration should look familiar.
 
 ### Step 4: OIDC Discovery Provider Configuration
 
-With the `spire-server` and `spire-agent` configuration out of the way, you can now view the OIDC Discovery Provider
-configuration file by running:
+The [SPIRE OIDC Discovery Provider](https://github.com/spiffe/spire/tree/main/support/oidc-discovery-provider) exposes
+an endpoint that allows external services to verify JWT SVIDs provided by our SPIRE server. We will walk through how 
+this works in the [next](#step-5-oidc-discovery-walkthrough) section.
+
+View the OIDC Discovery Provider configuration file by running:
 
 ```shell
 make view-oidc-discovery-provider-config
 ```
 
-This command will output the contents of the `spire-spiffe-oidc-discovery-provider` configmap used to run the
-`spire-spiffe-oidc-discovery-provider` pod. Reference the output below to see what this should look like.
-
-```log
+```json
 {
   "allow_insecure_scheme": true,
   "domains": [
     "spire-spiffe-oidc-discovery-provider",
     "spire-spiffe-oidc-discovery-provider.spire",
     "spire-spiffe-oidc-discovery-provider.spire.svc.cluster.local",
-    "127.0.0.1.nip.io",
-    "localhost"
+    "127.0.0.1.nip.io"
   ],
   "health_checks": {
     "bind_port": "8008",
@@ -177,71 +177,87 @@ This command will output the contents of the `spire-spiffe-oidc-discovery-provid
   "log_level": "info",
   "workload_api": {
     "socket_path": "/spiffe-workload-api/spire-agent.sock",
-    "trust_domain": "coastal-containers.io"
+    "trust_domain": "coastal-containers.example"
   }
 }
 ```
 
-The OIDC Discovery Provider configuration is crucial for integrating SPIRE with OIDC. Key components include:
+In the domains we can see that in addition to the configured JWT Issuer (`127.0.0.1.nip.io`), the service also supports
+the in cluster service DNS names.
 
-- `allow_insecure_scheme`: Allows insecure HTTP for local testing.
-- `domains`: Lists the domains that the OIDC Discovery Provider will respond to. In our configuration, we're using
-`127.0.0.1.nip.io` as the domain. [nip.io](https://nip.io/) is a service that provides a straightforward way to map
-IP addresses to hostnames. Instead of manually editing the `etc/hosts` file with custom hostname and IP address mappings,
-nip.io automates this process. It supports various formats, including:
-  - Without a name:
-    - `10.0.0.1.nip.io` maps to `10.0.0.1`.
-    - `192-168-1-250.nip.io` maps to `192.168.1.250`.
-    - `0a000803.nip.io` maps to `10.0.8.3`.
-  - With a name:
-    - `app.10.8.0.1.nip.io` maps to `10.8.0.1`.
-    - `customer1.app.10.0.0.1.nip.io` maps to `10.0.0.1`.
-    - `customer2-app-127-0-0-1.nip.io` maps to `127.0.0.1`.
-- [nip.io](https://nip.io/) can map any IP address in "dot", "dash", or "hexadecimal" notation to the corresponding IP
-address. For instance:
-  - Dot notation: `magic.127.0.0.1.nip.io`.
-  - Dash notation: `magic-127-0-0-1.nip.io`.
-  - Hexadecimal notation: `magic-7f000001.nip.io`.
-- The "dash" and "hexadecimal" notations are particularly useful when using services like
-[LetsEncrypt](https://letsencrypt.org/), as they are treated as regular subdomains of [nip.io](https://nip.io/). This
-service is open-source and is powered by [PowerDNS](https://www.powerdns.com/) with a custom
-[PipeBackend](https://doc.powerdns.com/authoritative/backends/pipe.html). It's a free service provided by Exentrique
-Solutions. The primary advantage of using [nip.io](https://nip.io/) in our configuration is that it allows us to route
-traffic to our local environment (like Docker or a Kind cluster) via the [nip.io](https://nip.io/) URL without any
-manual configuration.
-- `health_checks`: Defines the health check parameters.
-- `listen_socket_path`: The path to the socket where the OIDC Discovery Provider listens.
-- `workload_api`: Configures the connection to the SPIRE Agent, specifying the socket path and trust domain.
+### Step 5: OIDC Discovery Walkthrough
 
-### Step 5: Wait for SPIRE Agent
+To get a solid understanding of the OIDC Discovery protocol and how this can be used by external systems to verify JWT 
+SVIDs, we'll manually walk through the process.
 
-To ensure the next steps will work properly, wait for the SPIRE Agent to be running by issuing:
+First we need to create a couple of registration entries; one for the SPIRE agent, and a second for a generic workload:
 
 ```shell
-make spire-wait-for-agent
+make create-registration-entries
 ```
 
-If your `spire-agent` is running, you should see:
+```shell
+Entry ID         : caf1a7ab-a622-4d4c-bd4c-129081b72708
+SPIFFE ID        : spiffe://coastal-containers.example/agent/spire-agent
+Parent ID        : spiffe://coastal-containers.example/spire/server
+Revision         : 0
+X509-SVID TTL    : default
+JWT-SVID TTL     : default
+Selector         : k8s_psat:agent_ns:spire
+Selector         : k8s_psat:agent_sa:spire-agent
+Selector         : k8s_psat:cluster:kind-kind
 
-```log
-pod/spire-agent-qnmsk condition met
+Entry ID         : de1fb77d-2586-45ae-b497-6f1552569271
+SPIFFE ID        : spiffe://coastal-containers.example/workload
+Parent ID        : spiffe://coastal-containers.example/agent/spire-agent
+Revision         : 0
+X509-SVID TTL    : default
+JWT-SVID TTL     : default
+Selector         : k8s:ns:default
+Selector         : k8s:sa:default
 ```
 
-Keep in mind that the `qnmsk` identifier at the tail-end of the `spire-agent` pod name is subject to change per your own
-deployment of the SPIRE pods.
+Next we'll generate get the SPIRE server to mint a JWT SVID directly using the cli (in practice workloads would do this
+through the Workload API) and then we will view the claims.
 
-### Step 6: OIDC Discovery Document
+```shell
+JWT_SVID=$(kubectl exec -n spire spire-server-0 -- \
+  bin/spire-server jwt mint -audience oidc-discovery -spiffeID spiffe://coastal-containers.example/workload)
+jq -R 'split(".") | .[1] | @base64d | fromjson' <<< $JWT_SVID
+```
 
-Now, view the OIDC Discovery Document by running:
+We can see the token has:
+
+- The requested audience: `oidc-discovery`
+- The validity period: from `iat` to `exp`
+- The workload subject: `spiffe://coastal-containers.example/workload`
+- The token issuer: `https://127.0.0.1.nip.io`
+
+```json
+{
+  "aud": [
+    "oidc-discovery"
+  ],
+  "exp": 1709883690,
+  "iat": 1709882790,
+  "iss": "127.0.0.1.nip.io",
+  "sub": "spiffe://coastal-containers.example/workload"
+}
+```
+
+The [OIDC Discovery Spec](https://openid.net/specs/openid-connect-discovery-1_0-final.html), section 4 states that:
+
+> OpenID Providers supporting Discovery MUST make a JSON document available at the path formed by concatenating the 
+> string /.well-known/openid-configuration to the Issuer
+
+The Ingress for our cluster is using a NodePort mapped to `8443` on the host, so we can retrieve the OIDC Discovery 
+Document by running:
 
 ```shell
 curl -sk https://127.0.0.1.nip.io:8443/.well-known/openid-configuration | jq
 ```
 
-This `curl` command will display the OpenID configuration from our JWT issuer at `127.0.0.1.nip.io`. The provided output
-should look like:
-
-```log
+```json
 {
   "issuer": "https://127.0.0.1.nip.io",
   "jwks_uri": "https://127.0.0.1.nip.io/keys",
@@ -258,104 +274,185 @@ should look like:
 }
 ```
 
-The OIDC Discovery Document is a standard JSON object that describes the OIDC provider's configuration. It includes:
-
-- `issuer`: The URL of the OIDC provider. We will use `https://127.0.0.1.nip.io` for our demonstration.
-- `jwks_uri`: The URL of the provider's JSON Web Key Set (JWKS). We will use `https://127.0.0.1.nip.io/keys` for our
-demonstration.
-- `authorization_endpoint`: The URL of the authorization endpoint.
-- `response_types_supported`: Lists the OIDC response types supported by the provider. This is `id_token` in our case.
-- `subject_types_supported`: Lists the OIDC subject types supported.
-- `id_token_signing_alg_values_supported`: Lists the signing algorithms supported for ID tokens. This is `RS256`,
-`ES256`, and `ES384` in our case.
-
-### Step 7: View the JSON Web Key Set (JWKS)
-
-View the JWKS provided by our JWT issuer, by running:
+The Discovery Document tells us how to retrieve the keys we need to verify the signature contained in the JWT in the
+`jwks_uri` field.
 
 ```shell
 curl -sk https://127.0.0.1.nip.io:8443/keys | jq
 ```
 
-The output of this command should look like:
+We can see this returns an array of `keys`. As the SPIRE server rotates the signing keys, those that are still within
+their validity period will appear in this list.
 
-```log
+```json
 {
   "keys": [
     {
       "kty": "RSA",
-      "kid": "ThLDUEs6QyVMMAgTjRIFxgcdxPHmnID7",
+      "kid": "OLDcvewt1bPTr5f33WXKXirPPUQbq0R8",
       "alg": "RS256",
-      "n": "2d7TMSZQ_aUBxJxK9Y_986lrpZznYSTIs_lEj3dswXI2kknYjAPucHX1MLZvt1gh-v4IMVHyygdgPHni9XWM7yaOwLsBA888KWxAwfliOTRFa3Q9mkazsrJpR4ijJR5lCbsv0ISNFucnPAXtAgjde2ox9stpu9wNiSTfFkTbv8_vvBYzq_qlskmw_gOouLOGscWSPz7Gsi8hFKVX09aNnEZy53S58TkuNBqn4LFklxsNhk3WRyfUhXo-pA6B4DfchXBxvClOusySUpKXpp0877HKtpdpUwPn4u2scQr0D-O9Z6GFCk8f5w0N0B5tFEfXYQUK3fHaWswzE9y2EcSYrw",
+      "n": "osfM5niRZzBL2pD6EVRHZOd0YwOo-BEyoT0rYJi1Fv0w1rjsda_objnixf_Nd4iQBLg2f1H3ttHkdBv3HMhqoKgbPV2Nd8yDhBcL2AhYVsyJLPyFvDnrEMA4jCRPs_52tjg_u9VgCk6OSrJGb1nhOIzzYOvtT2Zl90brMOTLIqHxtjDdtjJvL3a3t_JR_e_2bFq1hkzjSDF5y-B4acX4wtrvj9eEeTiCWYzlgLoi6wX2GwQ37t6Y1wwpvQ4qWIqFDL8-9yFVzqf0ZqDqmOnCHqbRHugawx5tB6ELuRi-PP-TaUxC0gN26j22Ysxzm10N4K6IXxqV4qf7ONvuHp6NTQ",
       "e": "AQAB"
     }
   ]
 }
 ```
 
-JWKS is a set of keys containing the public keys used to verify any JSON Web Token (JWT) issued by the authorization
-server (`https://127.0.0.1.nip.io/keys` in our case). The JWKS contains:
-
-- `kty`: The key type.
-- `kid`: The key ID.
-- `alg`: The algorithm used.
-- `n`: The modulus for the RSA public key.
-- `e`: The exponent for the RSA public key.
-
-### Step 8: Deploy the Workload
-
-To build and load the provided workload image into your Kind cluster, run:
+We can determine which key was used to sign our JWT from the headers
 
 ```shell
-make cluster-build-load-image DIR=workload
+jq -R 'split(".") | .[0] | @base64d | fromjson' <<< $JWT_SVID
 ```
 
-Once it is successfully loaded onto your `kind-control-plane` and `kind-worker` nodes, you can deploy the workload as a
-Kubernetes [job](https://kubernetes.io/docs/concepts/workloads/controllers/job/). To do so, run:
+```json
+{
+  "alg": "RS256",
+  "kid": "OLDcvewt1bPTr5f33WXKXirPPUQbq0R8",
+  "typ": "JWT"
+}
+```
+
+We can see that the `kid` field in our JWT SVID: `OLDcvewt1bPTr5f33WXKXirPPUQbq0R8` identifies the key contained in the
+JWKS we retrieved, and we can use this to reconstitute the key, verify the signature and therefore the validation of the
+presented JWT.
+
+By exposing the OIDC Discovery Endpoint, we can present JWT SVIDs to any system that understands the OIDC Discovery 
+protocol, allowing them to verify our token and extract our identity from the claims (`sub`) and the intended use for
+the token (`aud`) enabling identity federation. An example use case for this is using SPIRE provided JWT SVIDs along 
+with web identity federation to [obtain temporary](https://spiffe.io/docs/latest/keyless/oidc-federation-aws/) AWS 
+credentials.
+
+### Step 6: Controller Manager Configuration
+
+As part of the helm deployment, we also installed the 
+[SPIRE Controller Manager](https://github.com/spiffe/spire-controller-manager) a Kubernetes Controller that watches for
+workloads running in the cluster and automatically creates registration entries in the SPIRE server.
+
+View the Controller Manager configuration file by running:
 
 ```shell
-make deploy-workload
+make view-controller-manager-config
 ```
 
-If successful, this will provide the output:
-
-```log
-/../../zero-trust-labs/ilt/lab-08-oidc-discovery/../bin/kubectl apply -f workload/job.yaml
-serviceaccount/workload created
-job.batch/workload created
+```yaml
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ControllerManagerConfig
+metadata:
+  name: spire-controller-manager
+  namespace: spire
+  labels:
+    helm.sh/chart: spire-server-0.1.0
+    app.kubernetes.io/name: server
+    app.kubernetes.io/instance: spire
+    app.kubernetes.io/version: "1.9.1"
+    app.kubernetes.io/managed-by: Helm
+metrics:
+  bindAddress: 0.0.0.0:8082
+health:
+  healthProbeBindAddress: 0.0.0.0:8083
+leaderElection:
+  leaderElect: true
+  resourceName: 67103523.spiffe.io
+  resourceNamespace: spire
+validatingWebhookConfigurationName: spire-spire-controller-manager-webhook
+clusterName: kind-kind
+trustDomain: coastal-containers.example
+ignoreNamespaces:
+  - kube-system
+  - kube-public
+  - local-path-storage
+spireServerSocketPath: "/tmp/spire-server/private/api.sock"
+className: "spire-spire"
+watchClassless: false
+parentIDTemplate: "spiffe://{{ .TrustDomain }}/spire/agent/k8s_psat/{{ .ClusterName }}/{{ .NodeMeta.UID }}"
 ```
 
-The workload, as defined in [main.go](./workload/main.go) and [job.yaml](./workload/job.yaml), is a Kubernetes job that
-simulates a service within Coastal Containers Ltd. It fetches a JWT SVID from the SPIRE Agent, parses the token,
-retrieves the OIDC Discovery Document, fetches the JWKS, and verifies the JWT's claims.
+The key configuration item here is 
+`parentIDTemplate: "spiffe://{{ .TrustDomain }}/spire/agent/k8s_psat/{{ .ClusterName }}/{{ .NodeMeta.UID }}"` which
+templates the Parent ID for dynamic registration entries. As you can see, it creates an entry for the SPIRE agent for
+the Node that the workload is deployed to.
 
-### Step 9: Analyze Workload Logs
+The SPIFFE ID created for a workload is configured using the ClusterSPIFFEID custom resource. This can be viewed by 
+running:
 
-Once the job has finished, run the following command to analyze the logs:
+```shell
+make view-spiffe-clusterid
+```
+
+```json
+{
+  "className": "spire-spire",
+  "namespaceSelector": {
+    "matchExpressions": [
+      {
+        "key": "kubernetes.io/metadata.name",
+        "operator": "NotIn",
+        "values": [
+          "spire",
+          "spire-server",
+          "spire-system"
+        ]
+      }
+    ]
+  },
+  "spiffeIDTemplate": "spiffe://{{ .TrustDomain }}/ns/{{ .PodMeta.Namespace }}/sa/{{ .PodSpec.ServiceAccountName }}"
+}
+```
+
+For workloads deployed to any namespace other than spire, spire-server, and spire-system, the SPIFFE ID will be of the
+format `spiffe://{{ .TrustDomain }}/ns/{{ .PodMeta.Namespace }}/sa/{{ .PodSpec.ServiceAccountName }}`. We will see this
+in action in the next step where we deploy a workload, without creating a registration entry manually.
+
+See the documentation for the [SPIRE Controller Manager](https://github.com/spiffe/spire-controller-manager) to 
+understand how you can configure this to suit your requirements if the default configuration does not meet your needs.
+
+### Step 7: Programmatic OIDC Discovery
+
+In this step we repeat the previous steps programmatically and also provide an example of verifying the JWT SVID using
+the [Go JOSE](https://github.com/go-jose/go-jose) library. 
+
+Have a look at the [workload](workload/main.go) and notice it performs the following steps:
+
+1. Create a Workload API client
+2. Obtain a JWT SVID (this is performed in a retry to allow time for the controller manager to register a SPIFFE ID for 
+the workload)
+3. Print the raw JWT
+4. Parse the JWT and print the headers and claims
+5. Retrieve and print the OIDC Discovery document (we use `http://spire-spiffe-oidc-discovery-provider.spire` here so 
+that it is resolvable from our workload in the cluster)
+6. Extract the JWKS URI, download, and print the JWKS
+7. Verify the JWT SVID using the correct JWK and print the verified claims
+
+To build and load the provided workload image into your Kind cluster and deploy the workload as a Job, run:
+
+```shell
+make cluster-build-load-image deploy-workload DIR=workload
+```
+
+Once the job has finished, run the following command to view the logs:
 
 ```shell
 make view-logs
 ```
 
-This will provide the output:
+This will provide output similar to this below:
 
-```log
-/../../zero-trust-labs/ilt/lab-08-oidc-discovery/../bin/kubectl logs jobs/workload
-2023/10/24 19:08:07 JWT SVID
-eyJhbGciOiJSUzI1NiIsImtpZCI6IlRoTERVRXM2UXlWTU1BZ1RqUklGeGdjZHhQSG1uSUQ3IiwidHlwIjoiSldUIn0.eyJhdWQiOlsibGFiLTA5Il0sImV4cCI6MTY5ODE3NTM4NywiaWF0IjoxNjk4MTc0NDg3LCJpc3MiOiIxMjcuMC4wLjEubmlwLmlvIiwic3ViIjoic3BpZmZlOi8vY29hc3RhbC1jb250YWluZXJzLmlvL25zL2RlZmF1bHQvc2Evd29ya2xvYWQifQ.tQssFhWymviYOot4tQlwppfuR84Yx9NiNeLFRCPS6E240ixmk4FvafldmUvprgGGJZgBiNKfGjd4uf5njn_Avh1pJgQZgRlRF_ZiMPRpYCG6eXXehVHYyguBD49ICiYXec0Va-INxB8Y7eFNhn78-Fp0Dre_CIFahOwWtoZ0MUwiZmpwwdZRHYPI-gOXpaB6IqufgvcvAqj_HNy-3k7oVZnb84v7_1VKwhKHWU8qWL_qplmWW6u4ICMe_Cj1uWRtXo5lsBeL885O2u7MLLBZ9qubC0qd8g0GX4SMvNg5LKeh_6Cx5MbIu6QcqlDRHDfEwnmQESehAX9pGZSalOnVZQ
+```shell
+2024/03/08 09:13:22 JWT SVID
+eyJhbGciOiJSUzI1NiIsImtpZCI6ImJ6UzRISGg0azcyWWY2UFNjUFdldFhVWXA3N3YxdHRHIiwidHlwIjoiSldUIn0.eyJhdWQiOlsib2lkYy1kaXNjb3ZlcnkiXSwiZXhwIjoxNzA5ODkwMTAyLCJpYXQiOjE3MDk4ODkyMDIsImlzcyI6IjEyNy4wLjAuMS5uaXAuaW8iLCJzdWIiOiJzcGlmZmU6Ly9jb2FzdGFsLWNvbnRhaW5lcnMuZXhhbXBsZS9ucy9kZWZhdWx0L3NhL3dvcmtsb2FkIn0.dQA4ngBL7C4HdeXg2Tbn2e83tnkWUSxq2cGor8K_Eu3x6Wv_ZMGyM7p0a6MCXq2QULUk-0hKcVO_PDi7Xub4zDAsAfxGx8_oLHbtPpYTVHrEsJWFih5GZWUFwk-0Q4CbPT8SapbU2xXX4ATAyEeLeRqSflsLTKJwVp5VaCdWgSFO0oWhWOmOMeZwrFmdqI-VOLJD5Xz6EUXh_XSpuaXq-sD7OHd0PgOLD1vrtGBclSinT-OQkmfkPDgyK7evk0zqoTVdLj86V3I4YRTM3XncP5eRHpHGsuAtiUluDBghGliNKEptWq5wbxwk89bgxyS7NA3UEzTQs4DemxSc9u7kPw
 
-2023/10/24 19:08:07 Parsed Token
-Headers:
+2024/03/08 09:13:22 Parsed Token
+Headers: 
 alg: RS256
-kid: ThLDUEs6QyVMMAgTjRIFxgcdxPHmnID7
-Claims:
+kid: bzS4HHh4k72Yf6PScPWetXUYp77v1ttG
+Claims: 
 iss: 127.0.0.1.nip.io
-sub: spiffe://coastal-containers.io/ns/default/sa/workload
-aud: [lab-08]
-iat: 2023-10-24 19:08:07 +0000 UTC
-exp: 2023-10-24 19:23:07 +0000 UTC
+sub: spiffe://coastal-containers.example/ns/default/sa/workload
+aud: [oidc-discovery]
+iat: 2024-03-08 09:13:22 +0000 UTC
+exp: 2024-03-08 09:28:22 +0000 UTC
 
-2023/10/24 19:08:07 OIDC Discovery Document from http://spire-spiffe-oidc-discovery-provider.spire/.well-known/openid-configuration:
+2024/03/08 09:13:22 OIDC Discovery Document from http://spire-spiffe-oidc-discovery-provider.spire/.well-known/openid-configuration: 
 {
   "issuer": "http://spire-spiffe-oidc-discovery-provider.spire",
   "jwks_uri": "http://spire-spiffe-oidc-discovery-provider.spire/keys",
@@ -371,43 +468,28 @@ exp: 2023-10-24 19:23:07 +0000 UTC
   ]
 }
 
-2023/10/24 19:08:07 JSON Web Key Set: {
+2024/03/08 09:13:22 JSON Web Key Set: {
   "keys": [
     {
       "kty": "RSA",
-      "kid": "ThLDUEs6QyVMMAgTjRIFxgcdxPHmnID7",
+      "kid": "bzS4HHh4k72Yf6PScPWetXUYp77v1ttG",
       "alg": "RS256",
-      "n": "2d7TMSZQ_aUBxJxK9Y_986lrpZznYSTIs_lEj3dswXI2kknYjAPucHX1MLZvt1gh-v4IMVHyygdgPHni9XWM7yaOwLsBA888KWxAwfliOTRFa3Q9mkazsrJpR4ijJR5lCbsv0ISNFucnPAXtAgjde2ox9stpu9wNiSTfFkTbv8_vvBYzq_qlskmw_gOouLOGscWSPz7Gsi8hFKVX09aNnEZy53S58TkuNBqn4LFklxsNhk3WRyfUhXo-pA6B4DfchXBxvClOusySUpKXpp0877HKtpdpUwPn4u2scQr0D-O9Z6GFCk8f5w0N0B5tFEfXYQUK3fHaWswzE9y2EcSYrw",
+      "n": "tl7rSTDhC9kWc00IRm9uBGYbDBPt56nkYYJGpZhSBDxTxsvjuQt-YnE17JKP3-rydgot_3bVqeBgOKyh7w8K-kj-nOndN8diGL4s9aS9Qz-hPpeZj2Mk-wFyeosSJH_ihxxeWLhvD2N3gXaDG5YTY5CFiy6-Iv4jkcrQ7t2m8B3bGCUpBQXy7bEeurOfVaWI8vqo7mjwBayblLZVCwx21stkyFaxhN2fsXeo74amS1ibkWYVb7LpHUPp9FuUM1bkKEz95r5aqIfQUDLa6Kd6SvvGyjgDWKlRVRFRKu4jcfDdwPgZUOcBJifls2dIiO24esTXtqqboew_mxbO8ga7iw",
       "e": "AQAB"
     }
   ]
 }
 
-2023/10/24 19:08:07 Verified claims:
-{"aud":["lab-08"],"exp":1698175387,"iat":1698174487,"iss":"127.0.0.1.nip.io","sub":"spiffe://coastal-containers.io/ns/default/sa/workload"}
+2024/03/08 09:13:22 Verified claims:
+{"aud":["oidc-discovery"],"exp":1709890102,"iat":1709889202,"iss":"127.0.0.1.nip.io","sub":"spiffe://coastal-containers.example/ns/default/sa/workload"}
 ```
 
-The logs provide a step-by-step breakdown of the workload's operations:
+### Step 8: Cleanup
 
-- **JWT SVID**: The JWT token fetched from the SPIRE Agent.
-- **Parsed Token**: The parsed JWT token showing headers and claims.
-- **OIDC Discovery Document**: The fetched OIDC Discovery Document.
-- **JSON Web Key Set**: The fetched JWKS.
-- **Verified claims**: The JWT's claims after verification against the JWKS.
-
-### Step 10: Cleanup
-
-As the following lab exercises will use the same cluster, tear down the workload job and uninstall SPIRE using helm by
-running:
+To tear down the Kind cluster, run:
 
 ```shell
-cd $LAB_DIR && make tear-down spire-helm-uninstall
-```
-
-To tear down the entire Kind cluster, run:
-
-```shell
-cd $LAB_DIR && make cluster-down
+make cluster-down
 ```
 
 ## Conclusion

@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: server
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: client
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: client
+  labels:
+    app.kubernetes.io/name: client
+spec:
+  serviceAccountName: client
+  containers:
+    - name: client
+      image: wbitt/network-multitool:latest
+      imagePullPolicy: Never
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: server
+  labels:
+    app.kubernetes.io/name: server
+spec:
+  serviceAccountName: server
+  containers:
+    - name: server
+      image: wbitt/network-multitool:latest
+      imagePullPolicy: Never

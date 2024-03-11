@@ -18,12 +18,17 @@ clusters-up: kind ## Create kind clusters
 	@echo clusters up
 
 define cluster-create
-  @$(KIND) create cluster --config=config/kind-config.yaml --name=$(1)
-	$(KUBECTL) --context=kind-$1 apply -f manifests/spire-base.yaml
+  	@$(KIND) create cluster --config=config/kind-config.yaml --name=$(1)
+  	@$(KIND) load docker-image --name $(1) $(SPIRE_SERVER_IMAGE_TAG)
+	@$(KIND) load docker-image --name $(1) $(SPIRE_AGENT_IMAGE_TAG)
+	@$(KIND) load docker-image --name $(1) $(WAIT_FOR_IT_IMAGE_TAG)
+	@$(KIND) load docker-image --name $(1) $(SPIFFE_CSI_DRIVER_IMAGE_TAG)
+	@$(KIND) load docker-image --name $(1) $(CSI_NODE_DRIVER_REGISTRAR_IMAGE_TAG)
+	@$(KUBECTL) --context=kind-$1 apply -f manifests/spire-base.yaml
 endef
 
 define cluster-delete
-  @$(KIND) delete cluster --name=$(1)
+	@$(KIND) delete cluster --name=$(1)
 endef
 
 .PHONY: deploy-root-spire
@@ -48,8 +53,6 @@ endef
 
 .PHONY: deploy-nested-spires
 deploy-nested-spires: kubectl ## Deploy SPIRE on the K8s cluster
-# $(call trust-nested,cargo-clipper)
-# $(call trust-nested,tidal-transporter)
 	$(call deploy-spire,cargo-clipper)
 	$(call deploy-spire,tidal-transporter)
 
@@ -82,33 +85,37 @@ endef
 
 .PHONY: deploy-workloads
 deploy-workloads: kubectl kind ## Deploy workloads
-	@docker build -t server workload/server
-	@docker build -t client workload/client
+	@docker build --build-arg PYTHON_IMAGE=$(PYTHON_IMAGE) \
+		--build-arg SPIFFE_HELPER_IMAGE=$(SPIFFE_HELPER_IMAGE) \
+		-t server workload/server
+	@docker build --build-arg PYTHON_IMAGE=$(PYTHON_IMAGE) \
+		--build-arg SPIFFE_HELPER_IMAGE=$(SPIFFE_HELPER_IMAGE) \
+		-t client workload/client
 	@$(KIND) load --name coastal-containers docker-image server
 	@$(KIND) load --name cargo-clipper docker-image client
 	@$(KIND) load --name tidal-transporter docker-image client
-	$(KUBECTL) --context=kind-coastal-containers exec -n spire spire-server-0 -c spire-server -- \
+	@$(KUBECTL) --context=kind-coastal-containers exec -n spire spire-server-0 -c spire-server -- \
 		/opt/spire/bin/spire-server entry create \
 		-spiffeID spiffe://coastal-containers.example/manifest/workload/server \
 		-parentID spiffe://coastal-containers.example/coastal-containers/agent/spire-agent \
 		-selector k8s:ns:default \
 		-selector k8s:sa:server
-	$(KUBECTL) --context=kind-cargo-clipper exec -n spire spire-server-0 -c spire-server -- \
+	@$(KUBECTL) --context=kind-cargo-clipper exec -n spire spire-server-0 -c spire-server -- \
 		/opt/spire/bin/spire-server entry create \
 		-spiffeID spiffe://coastal-containers.example/cargo-clipper/manifest/workload/client \
 		-parentID spiffe://coastal-containers.example/cargo-clipper/agent/spire-agent \
 		-selector k8s:ns:default \
 		-selector k8s:sa:client
-	$(KUBECTL) --context=kind-tidal-transporter exec -n spire spire-server-0 -c spire-server -- \
+	@$(KUBECTL) --context=kind-tidal-transporter exec -n spire spire-server-0 -c spire-server -- \
 		/opt/spire/bin/spire-server entry create \
 		-spiffeID spiffe://coastal-containers.example/tidal-transporter/manifest/workload/client \
 		-parentID spiffe://coastal-containers.example/tidal-transporter/agent/spire-agent \
 		-selector k8s:ns:default \
 		-selector k8s:sa:client
-	$(KUBECTL) --context=kind-coastal-containers apply -f manifests/workload-server.yaml
-	$(KUBECTL) --context=kind-coastal-containers wait --timeout=300s --for=condition=Ready pod -l app=server
+	@$(KUBECTL) --context=kind-coastal-containers apply -f manifests/workload-server.yaml
+	@$(KUBECTL) --context=kind-coastal-containers wait --timeout=300s --for=condition=Ready pod -l app=server
 	@sleep 30
-	$(KUBECTL) --context=kind-cargo-clipper apply -f manifests/workload-client.yaml
-	$(KUBECTL) --context=kind-cargo-clipper wait --timeout=300s --for=condition=Ready pod -l app=client
-	$(KUBECTL) --context=kind-tidal-transporter apply -f manifests/workload-client.yaml
-	$(KUBECTL) --context=kind-tidal-transporter wait --timeout=300s --for=condition=Ready pod -l app=client
+	@$(KUBECTL) --context=kind-cargo-clipper apply -f manifests/workload-client.yaml
+	@$(KUBECTL) --context=kind-cargo-clipper wait --timeout=300s --for=condition=Ready pod -l app=client
+	@$(KUBECTL) --context=kind-tidal-transporter apply -f manifests/workload-client.yaml
+	@$(KUBECTL) --context=kind-tidal-transporter wait --timeout=300s --for=condition=Ready pod -l app=client

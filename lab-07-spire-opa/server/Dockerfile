@@ -1,0 +1,20 @@
+ARG GOLANG_BUILDER_IMAGE
+ARG GOLANG_IMAGE
+
+FROM $GOLANG_BUILDER_IMAGE AS BUILDER
+
+WORKDIR /app
+
+COPY go.* ./
+RUN go mod download
+
+COPY *.go ./
+RUN go build -o /server
+
+FROM $GOLANG_IMAGE
+
+COPY --from=BUILDER /server /server
+
+EXPOSE 8443
+
+ENTRYPOINT ["/server"]

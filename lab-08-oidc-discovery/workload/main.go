@@ -3,18 +3,19 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"io"
+	"log"
+	"net/http"
+
 	"github.com/avast/retry-go"
 	"github.com/go-jose/go-jose/v3"
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/spiffe/go-spiffe/v2/svid/jwtsvid"
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
-	"io"
-	"log"
-	"net/http"
 )
 
 const (
-	audience = "lab-09"
+	audience = "oidc-discovery"
 )
 
 func main() {

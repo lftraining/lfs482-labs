@@ -40,6 +40,13 @@ endef
 
 define cluster-create
 	@$(KIND) create cluster --config=config/kind-config.yaml --name=$(1)
+	@$(KIND) load docker-image --name $(1) $(SPIRE_SERVER_IMAGE_TAG)
+	@$(KIND) load docker-image --name $(1) $(SPIRE_AGENT_IMAGE_TAG)
+	@$(KIND) load docker-image --name $(1) $(WAIT_FOR_IT_IMAGE_TAG)
+	@$(KIND) load docker-image --name $(1) $(SPIFFE_CSI_DRIVER_IMAGE_TAG)
+	@$(KIND) load docker-image --name $(1) $(CSI_NODE_DRIVER_REGISTRAR_IMAGE_TAG)
+	@$(KIND) load docker-image --name $(1) $(NETWORK_MULTITOOL_IMAGE_TAG)
+	@$(KIND) load docker-image --name $(1) $(BUSYBOX_IMAGE_TAG)
 endef
 
 define cluster-delete
@@ -54,11 +61,15 @@ clusters-down: kind ## Delete kind clusters
 
 .PHONY: deploy-workload
 deploy-workload: kubectl ## Deploy workload on the K8s cluster
-	@docker build -t server workload/server
-	@docker build -t client workload/client
+	@docker build --build-arg GOLANG_BUILDER_IMAGE=$(GOLANG_BUILDER_IMAGE) \
+		--build-arg GOLANG_IMAGE=$(GOLANG_IMAGE) \
+		-t server workload/server
+	@docker build --build-arg GOLANG_BUILDER_IMAGE=$(GOLANG_BUILDER_IMAGE) \
+		--build-arg GOLANG_IMAGE=$(GOLANG_IMAGE) \
+		-t client workload/client
 	@kind load --name coastal-containers docker-image server
 	@kind load --name airfreight-nexus docker-image client
-	$(KUBECTL) --context=kind-coastal-containers apply -f manifests/workload-server.yaml
-	$(KUBECTL) --context=kind-airfreight-nexus apply -f manifests/workload-client.yaml
-	$(KUBECTL) --context=kind-coastal-containers wait --timeout=300s --for=condition=Ready pod -l app=server
+	@$(KUBECTL) --context=kind-coastal-containers apply -f manifests/workload-server.yaml
+	@$(KUBECTL) --context=kind-airfreight-nexus apply -f manifests/workload-client.yaml
+	@$(KUBECTL) --context=kind-coastal-containers wait --timeout=300s --for=condition=Ready pod -l app=server
 	@echo "Workload deployed on the clusters."

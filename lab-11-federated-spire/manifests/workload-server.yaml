@@ -22,7 +22,8 @@ spec:
       serviceAccountName: server
       initContainers:
         - name: agent
-          image: ghcr.io/spiffe/spire-agent:1.8.0
+          image: spiffe/spire-agent:latest
+          imagePullPolicy: Never
           command: ["/opt/spire/bin/spire-agent", "api", "fetch", "x509", "-write", "/tmp/svids", "-socketPath", "/spire-agent-socket/agent.sock"]
           volumeMounts:
             - name: spire-agent-socket
@@ -37,7 +38,7 @@ spec:
               containerPort: 9443
               hostPort: 9443
           image: server:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never
           volumeMounts:
             - name: svids
               mountPath: /var/run/secrets/svids

@@ -10,22 +10,34 @@ include ../tools/Makefile
 
 ##@ Lab
 
+.PHONY: platform-images
+platform-images: ## Load component images into the cluster
+	@$(MAKE) cluster-load-image IMG=$(SPIRE_SERVER_IMAGE_TAG)
+	@$(MAKE) cluster-load-image IMG=$(SPIRE_AGENT_IMAGE_TAG)
+	@$(MAKE) cluster-load-image IMG=$(WAIT_FOR_IT_IMAGE_TAG)
+	@$(MAKE) cluster-load-image IMG=$(SPIFFE_CSI_DRIVER_IMAGE_TAG)
+	@$(MAKE) cluster-load-image IMG=$(CSI_NODE_DRIVER_REGISTRAR_IMAGE_TAG)
+
 .PHONY: deploy-spire
 deploy-spire: kubectl ## Deploy SPIRE on the K8s cluster
 	@echo "🏗️ Deploying SPIRE on the cluster..."
-	$(KUBECTL) apply -f config/spire-server.yaml
-	$(KUBECTL) apply -f config/spiffe-csi-driver.yaml
-	$(KUBECTL) apply -f config/spire-agent.yaml
+	@$(KUBECTL) create namespace spire
+	@$(KUBECTL) apply -f spire-server
+	@$(KUBECTL) apply -f spire-agent
 	@echo "✔️ SPIRE deployed on the cluster."
 
-.PHONY: tear-down
-tear-down: kubectl ## Tear down SPIRE and deployed workloads
-	@echo "🚧 Deleting SPIRE on the cluster..."
-	$(KUBECTL) delete -f config/spire-server.yaml
-	$(KUBECTL) delete -f config/spiffe-csi-driver.yaml
-	$(KUBECTL) delete -f config/spire-agent.yaml
-	@echo "❌ SPIRE deleted on the cluster."
-	@echo "🚧 Tearing down deployed workloads..."
-	$(KUBECTL) delete -f config/deploy-client.yaml
-	$(KUBECTL) delete -f config/deploy-server.yaml
-	@echo "❌ Workloads deleted, fair winds and following seas on yer voyage ! ⚓"
+.PHONY: workload-images
+workload-images: ## Build and load workload images into the cluster
+	@$(MAKE) cluster-build-load-image DIR=manifest-server
+	@$(MAKE) cluster-build-load-image DIR=manifest-client
+
+.PHONY: deploy-workloads
+deploy-workloads: ## Deploy the manifest server and client
+	@$(KUBECTL) apply -f manifest-server/app.yaml
+	@$(KUBECTL) apply -f manifest-client/app.yaml
+
+##@ Infrastructure
+
+.PHONY: cluster-up
+cluster-up:: ## Launch a Kind cluster
+	$(MAKE) platform-images

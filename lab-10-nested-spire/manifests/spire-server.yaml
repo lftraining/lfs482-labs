@@ -20,15 +20,9 @@ spec:
     spec:
       serviceAccountName: spire-server
       containers:
-        - name: debug
-          image: busybox
-          command: ["/bin/sleep", "infinity"]
-          volumeMounts:
-            - name: spire-data
-              mountPath: /run/spire/data
-              readOnly: false
         - name: spire-server
-          image: ghcr.io/spiffe/spire-server:1.8.0
+          image: spiffe/spire-server:latest
+          imagePullPolicy: Never
           args: ["-config", "/run/spire/config/server.conf"]
           ports:
             - containerPort: 8081

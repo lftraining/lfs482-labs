@@ -14,8 +14,8 @@ spec:
       serviceAccountName: workload
       containers:
         - name: agent
-          image: workload
-          imagePullPolicy: IfNotPresent
+          image: workload:latest
+          imagePullPolicy: Never
           env:
             - name: SPIFFE_ENDPOINT_SOCKET
               value: unix:///spiffe-workload-api/spire-agent.sock

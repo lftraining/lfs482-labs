@@ -50,18 +50,6 @@ represented by three SPIRE servers (`spire-server-0`, `spire-server-1`, and `spi
 Verifiable Identity Documents (SVIDs) to authenticate each tug boat in the fleets, ensuring secure and trusted
 communication channels, while maintaining high availability through a shared Postgres datastore.
 
-### Preparing Your Environment
-
-Before you cast off, prepare your ships to sail by setting your working directory in [lab-09-ha-mode](../lab-09-ha-mode)
-as an environment variable:
-
-```bash
-export LAB_DIR=$(pwd)
-```
-
-This will make issuing commands easier in the following steps of this exercise, and will reduce the possibility of
-reference errors.
-
 ## Step-by-Step Instructions
 
 ### Step 1: Provision Infrastructure
@@ -117,17 +105,23 @@ make spire-helm-install
 If SPIRE deploys successfully, you should see an output similar to:
 
 ```log
-Installing SPIRE using Helm...
-
+🏗️ Installing SPIRE using Helm...
+NAME: spire-crds
+LAST DEPLOYED: Fri Mar  8 10:45:50 2024
+NAMESPACE: spire
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
 NAME: spire
-LAST DEPLOYED: Fri Oct  6 14:01:48 2023
+LAST DEPLOYED: Fri Mar  8 10:45:51 2024
 NAMESPACE: spire
 STATUS: deployed
 REVISION: 1
 NOTES:
 Installed spire…
 
-SPIRE installed using Helm.
+Spire CR's will be handled only if className is set to "spire-spire"
+✔️ SPIRE installed using Helm.
 ```
 
 *Note: SPIRE may take a few minutes to get running, so please be patient until all pods are running in the `spire`
@@ -145,8 +139,18 @@ spire-server:
   replicaCount: 3
   ca_subject:
     country: UK
-    organization: Coastal Containers Ltd.
-    common_name: coastal-containers.example
+    organization: CoastalContainers
+    common_name: Coastal Containers Ltd
+  controllerManager:
+    enabled: true
+    image:
+      registry: ""
+      pullPolicy: Never
+      tag: latest
+  image:
+    registry: ""
+    pullPolicy: Never
+    tag: latest
   dataStore:
     sql:
       databaseType: postgres
@@ -157,6 +161,28 @@ spire-server:
       password: coastal-containers
       options:
         - sslmode: disable
+spiffe-oidc-discovery-provider:
+  enabled: false
+spire-agent:
+  image:
+    registry: ""
+    pullPolicy: Never
+    tag: latest
+  waitForIt:
+    image:
+      registry: ""
+      pullPolicy: Never
+      tag: latest
+spiffe-csi-driver:
+  image:
+    registry: ""
+    pullPolicy: Never
+    tag: latest
+  nodeDriverRegistrar:
+    image:
+      registry: ""
+      pullPolicy: Never
+      tag: latest
 ```
 
 **Global Configuration:**
@@ -169,8 +195,8 @@ spire-server:
 - `replicaCount`: Number of replicas for the SPIRE Server, ensuring high availability. This is set to 2 for our purposes.
 - `ca_subject`: Contains the CA subject information for generating self-signed certificates.
   - `country`: CA country name, set to UK for the Coastal Containers HQ.
-  - `organization`: CA organization name, set to Coastal Containers Ltd. for our scenario.
-  - `common_name`: CA common name, set to `coastal-containers.example` for our scenario setup.
+  - `organization`: CA organization name, set to CoastalContainers for our scenario.
+  - `common_name`: CA common name, set to `Coastal Containers Ltd` for our scenario setup.
 
 **DataStore Configuration:**
 
@@ -233,7 +259,6 @@ fleets. Before we deploy them, however, we must build the workload Docker image 
 deployments. To do this, navigate to the lab root directory and run:
 
 ```shell
-cd $LAB_DIR
 make cluster-build-load-image DIR=workload
 ```
 
@@ -248,18 +273,12 @@ If the workloads deployed as expected, you should see:
 
 ```log
 Deploying tugboat fleet alpha...
-
-/../../zero-trust-labs/ilt/lab-06-ha-mode/../bin/kubectl apply -f config/deploy-alpha.yaml
 serviceaccount/fleet-alpha created
 deployment.apps/fleet-alpha created
-
 Tugboat fleet alpha deployed.
 Deploying tugboat fleet beta...
-
-/../../zero-trust-labs/ilt/lab-06-ha-mode/../bin/kubectl apply -f config/deploy-beta.yaml
 serviceaccount/fleet-beta created
 deployment.apps/fleet-beta created
-
 Tugboat fleet beta deployed.
 ```
 
@@ -348,19 +367,19 @@ SVIDs.
 Inspect `fleet-alpha` by running:
 
 ```shell
-kubectl logs -f deployment/fleet-alpha
+kubectl logs deployment/fleet-alpha
 ```
 
 Inspect `fleet-beta` by running:
 
 ```shell
-kubectl logs -f deployment/fleet-beta
+kubectl logs deployment/fleet-beta
 ```
 
 Alternatively, you can inspect each individual tug boat pod by running:
 
 ```shell
-kubectl logs -f fleet-<name>-<podid>
+kubectl logs fleet-<name>-<podid>
 ```
 
 If everything is working properly, you will see an outputted SVID in PEM format that looks similar to this:
@@ -389,19 +408,10 @@ z+qFtOiqs2rEERBfdqHfK3ByvwP18lGLphsvFiCIeAdzHNAWMEPrUUotF1EK08hu
 
 ### Step 9: Cleanup
 
-As the following lab exercises will use the same cluster, uninstall SPIRE using helm and tear down workload deployments
-from this lab by running:
-
-```shell
-cd $LAB_DIR
-helm uninstall spire
-make tear-down
-```
-
 To tear down the entire Kind cluster, run:
 
 ```shell
-cd $LAB_DIR && make cluster-down
+make cluster-down
 ```
 
 ## Conclusion

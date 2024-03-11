@@ -15,17 +15,6 @@ different platforms and environments. This enables secure communication between 
 crews, regions or organizations. Ye will use Kubernetes for managing containerized applications, to run yer SPIRE
 Servers and workloads.
 
-### Preparing Your Environment
-
-Before you cast off, prepare your ship to sail by setting up your working environment. If you haven't yet done so, make
-sure you've cloned the lab repository to your local system. After that, you'll be working from the
-[lab-11-federated-spire](../lab-11-federated-spire) directory.
-
-```bash
-export LAB_DIR=$(pwd)
-export PATH=$PATH:$(pwd)/../bin
-```
-
 ## Step-by-Step Instructions
 
 ### Step 1: Boot two Kubernetes clusters
@@ -270,10 +259,10 @@ SPIRE deployments.
 
 ### Step 7: Cleanup
 
-Now that you've proved everything works, its time to scrub the decks and delete your clusters:
+Now that you've proved everything works, it's time to scrub the decks and delete your clusters:
 
 ```shell
-cd $LAB_DIR && make clusters-down
+make clusters-down
 ```
 
 Additionally, delete the bundles directory by running:

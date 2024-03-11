@@ -10,45 +10,55 @@ include ../tools/Makefile
 
 ##@ Lab
 
+.PHONY: platform-images
+platform-images: ## Load component images into the cluster
+	@$(MAKE) cluster-load-image IMG=$(SPIRE_SERVER_IMAGE_TAG)
+	@$(MAKE) cluster-load-image IMG=$(SPIRE_AGENT_IMAGE_TAG)
+	@$(MAKE) cluster-load-image IMG=$(WAIT_FOR_IT_IMAGE_TAG)
+	@$(MAKE) cluster-load-image IMG=$(SPIFFE_CSI_DRIVER_IMAGE_TAG)
+	@$(MAKE) cluster-load-image IMG=$(CSI_NODE_DRIVER_REGISTRAR_IMAGE_TAG)
+
 .PHONY: deploy-spire
 deploy-spire: kubectl ## Deploy SPIRE on the K8s cluster
-	@echo "Deploying SPIRE on the cluster..."
-	$(KUBECTL) apply -f config/spire-server.yaml
-	$(KUBECTL) apply -f config/spiffe-csi-driver.yaml
-	$(KUBECTL) apply -f config/spire-agent.yaml
-	@echo "SPIRE deployed on the cluster."
+	@echo "🏗️ Deploying SPIRE on the cluster..."
+	@$(KUBECTL) create namespace spire
+	@$(KUBECTL) apply -f spire-server
+	@$(KUBECTL) apply -f spire-agent
+	@echo "✔️ SPIRE deployed on the cluster."
 
-.PHONY: register-agent
-register-agent: kubectl spire-wait-for-agent ## Create the registration entry for the SPIRE agent
-	$(KUBECTL) exec -n spire spire-server-0 -- /opt/spire/bin/spire-server entry create \
+.PHONY: create-registration-entries
+create-registration-entries: kubectl spire-wait-for-agent ## Create the registration entries
+	@$(KUBECTL) exec -n spire spire-server-0 -- /opt/spire/bin/spire-server entry create \
 		-spiffeID spiffe://coastal-containers.example/agent/spire-agent \
 		-selector k8s_psat:cluster:kind-kind \
 		-selector k8s_psat:agent_ns:spire \
 		-selector k8s_psat:agent_sa:spire-agent \
 		-node
 
-.PHONY: deploy-server
-deploy-server: kubectl ## deploy the server workload on the k8s cluster
-	@echo "Deploying the server workload on the cluster..."
-	$(KUBECTL) apply -f config/deploy-server.yaml
-	$(KUBECTL) wait --for=condition=Ready --timeout=300s pod -l app=server
-	@echo "Server workload deployed on the cluster."
+	@$(KUBECTL) exec -n spire spire-server-0 -- /opt/spire/bin/spire-server entry create \
+    		-spiffeID spiffe://coastal-containers.example/workload/server \
+    		-parentID spiffe://coastal-containers.example/agent/spire-agent \
+    		-selector k8s:ns:default \
+    		-selector k8s:sa:server
 
-.PHONY: deploy-client
-deploy-client: kubectl ## deploy the client workload on the K8s cluster
-	@echo "Deploying the client workload on the cluster..."
-	$(KUBECTL) apply -f config/deploy-client.yaml
-	$(KUBECTL) wait --for=condition=Ready --timeout=300s pod -l app=client
-	@echo "Client workload deployed on the cluster."
+	@$(KUBECTL) exec -n spire spire-server-0 -- /opt/spire/bin/spire-server entry create \
+    		-spiffeID spiffe://coastal-containers.example/workload/client \
+    		-parentID spiffe://coastal-containers.example/agent/spire-agent \
+    		-selector k8s:ns:default \
+    		-selector k8s:sa:client
 
-.PHONY: tear-down
-tear-down: kubectl ## Tear down SPIRE and deployed workloads
-	@echo "🚧 Deleting SPIRE on the cluster..."
-	$(KUBECTL) delete -f config/spire-server.yaml
-	$(KUBECTL) delete -f config/spiffe-csi-driver.yaml
-	$(KUBECTL) delete -f config/spire-agent.yaml
-	@echo "❌ SPIRE deleted on the cluster."
-	@echo "🚧 Tearing down deployed workloads..."
-	$(KUBECTL) delete -f config/deploy-client.yaml
-	$(KUBECTL) delete -f config/deploy-server.yaml
-	@echo "❌ Workloads deleted, fair winds and following seas on yer voyage ! ⚓"
+.PHONY: workload-images
+workload-images: ## Build and load workload images into the cluster
+	@$(MAKE) cluster-build-load-image DIR=server
+	@$(MAKE) cluster-build-load-image DIR=client
+
+.PHONY: deploy-workloads
+deploy-workloads: ## Deploy the manifest server and client
+	@$(KUBECTL) apply -f server/app.yaml
+	@$(KUBECTL) apply -f client/app.yaml
+
+##@ Infrastructure
+
+.PHONY: cluster-up
+cluster-up:: ## Launch a Kind cluster
+	$(MAKE) platform-images

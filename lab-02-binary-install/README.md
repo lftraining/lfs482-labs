@@ -18,57 +18,27 @@ configuration, and simple attestation methods. By the end of the hands-on exerci
 SPIRE setup, but you'll also understand the 'why' and 'how' behind key configuration settings. It's not just about
 making things work; it's about knowing why they work.
 
-### Preparing Your Environment
-
-Before you cast off, prepare your ships to sail by setting your working directory in
-[lab-02-binary-install](../lab-02-binary-install) as an environment variable:
-
-```bash
-export LAB_DIR=$(pwd)
-```
-
-This will make issuing commands easier in the following steps of this exercise, and will reduce the possibility of
-reference errors.
-
 ## Step-by-Step Instructions
 
-### Step 1: Download SPIRE Binaries
+### Step 1: Add SPIRE Binaries to PATH
 
-With your working directory at [lab-02-binary-install](../lab-02-binary-install/), download the pre-built SPIRE binaries
-for Linux from the [SPIRE GitHub releases page](https://github.com/spiffe/spire/releases/).
+Add the [bin](../bin) directory to your path as follows, and check by running the version command:
 
-```bash
-export ARCH=$(arch | sed s/aarch64/arm64/ | sed s/x86_64/amd64/)
-curl -s -N -L https://github.com/spiffe/spire/releases/download/v1.8.0/spire-1.8.0-linux-$ARCH-musl.tar.gz \
-  | tar xz -C $LAB_DIR
+```shell
+export PATH=../bin:$PATH
 ```
 
-This command will unpack the pre-built `spire-server` and `spire-agent` executables along with their configuration files
-into a directory named `spire-1.8.0` within `$LAB_DIR`.
-
-Once unpacked, you can navigate to the directory where the SPIRE binaries were extracted.
-
-```bash
-cd $LAB_DIR/spire-1.8.0
+```shell
+spire-server --version
+spire-agent --version
 ```
-
-Explore this directory and locate the key config files for the SPIRE Server ([server.conf](./sample/config/server/server.conf)) and Agent
-([agent.conf](./sample/config/agent/agent.conf)).
 
 ### Step 2: Configure the SPIRE Server
 
-In this step, you'll configure the SPIRE Server using an example [server.conf](./sample/config/server/server.conf) file tailored for the Coastal
-Containers organization. We'll walk you through the key parameters you need to emulate this configuration.
+In this step, you'll configure the SPIRE Server for the Coastal Containers organization. We'll walk you through the key 
+parameters you need to change from the defaults for this configuration.
 
-To begin with server configuration, navigate to the SPIRE Server configuration directory using the `$LAB_DIR`
-environment variable you set previously.
-
-```bash
-cd $LAB_DIR/spire-1.8.0/conf/server
-```
-
-Now, open your local `server.conf` file in your preferred text editor. Once opened, note the differences in the provided
-[server.conf](./sample/config/server/server.conf) file and update your local `server.conf` file to reflect the example config.
+Open the default [server.conf](config/server/server.conf) file in your preferred text editor.
 
 #### Key Parameters to Update
 
@@ -126,20 +96,13 @@ plugins {
 ```
 
 ⚠️ *Note: These settings are for demonstration purposes only and are not suitable for production environments. For a
-detailed configuration guide, check the [SPIRE Server Configuration Reference](https://spiffe.io/docs/latest/deploying/spire_server/).*
+detailed configuration guide, check the 
+[SPIRE Server Configuration Reference](https://spiffe.io/docs/latest/deploying/spire_server/).*
 
 ### Step 3: Configure the SPIRE Agent
 
-Now, to begin agent configuration, navigate to the SPIRE Agent configuration directory using the `$LAB_DIR` environment
-variable you set previously.
-
-```bash
-cd $LAB_DIR/spire-1.8.0/conf/agent
-```
-
-You should follow a similar configuration process for the agent as you did with the server. First, open your local
-`agent.conf` file in your preferred text editor. Once opened, note the differences in the provided [agent.conf](./sample/config/agent/agent.conf)
-file and update your local `agent.conf` file to reflect the example config.
+You should follow a similar configuration process for the agent as you did with the server. First, open your
+the [agent.conf](config/agent/agent.conf) file in your preferred text editor.
 
 #### Key Parameters to Update
 
@@ -184,26 +147,20 @@ plugins {
         plugin_data {}
     }
 }
-
 ```
 
 ⚠️ *Note: These settings are for demonstration purposes only and are not suitable for production environments. For a
-detailed configuration guide, check the [SPIRE Agent Configuration Reference](https://spiffe.io/docs/latest/deploying/spire_agent/)*.
+detailed configuration guide, check the 
+[SPIRE Agent Configuration Reference](https://spiffe.io/docs/latest/deploying/spire_agent/)*.
 
 ### Step 4: Start the SPIRE Server
 
 Now that you have configured the server and agent, you can start running the SPIRE components.
 
-First, navigate back to the root SPIRE directory so you can access the `spire-server` and `spire-agent` executables.
+Start the SPIRE Server using your updated `server.conf` configuration file.
 
 ```bash
-cd $LAB_DIR/spire-1.8.0
-```
-
-Now, you are ready to start the SPIRE Server using your updated `server.conf` configuration file.
-
-```bash
-bin/spire-server run -config conf/server/server.conf &
+spire-server run -config config/server/server.conf &
 ```
 
 This will launch the SPIRE Server in the background and output the logs to the terminal.
@@ -221,7 +178,7 @@ Once the SPIRE Server has started, hit enter, and run the following command to v
 and healthy.
 
 ```bash
-bin/spire-server healthcheck
+spire-server healthcheck
 ```
 
 If everything is working and the SPIRE Server has started properly, you should see the following:
@@ -234,17 +191,17 @@ If not, you may need to troubleshoot your `server.conf` configuration and attemp
 
 ### Step 5: Generate a Join Token
 
-For this demo, you will be using a [join token](https://spiffe.io/docs/latest/deploying/configuring/#join-token) to provide agent attestation to the SPIRE Server. A join token is
-a simple, one-time-use token for this attestation process. Other methods of node attestation can be found
+For this demo, you will be using a [join token](https://spiffe.io/docs/latest/deploying/configuring/#join-token) to 
+provide agent attestation to the SPIRE Server. A join token is a simple, one-time-use token for this attestation 
+process. Other methods of node attestation can be found 
 [here](https://spiffe.io/docs/latest/deploying/configuring/#how-to-configure-spire) within the official SPIFFE docs.
 
 Now, with your SPIRE Server up and running, generate a join token to attest the SPIRE Agent to the SPIRE Server.
 
 ```bash
-bin/spire-server token generate -spiffeID spiffe://coastal-containers.example/spire-agent
+JOIN_TOKEN=$(spire-server token generate -spiffeID spiffe://coastal-containers.example/spire-agent --output=json | jq -r .value)
+echo $JOIN_TOKEN
 ```
-
-Upon execution, you'll receive a `<token_string>`. Keep it safe—you'll need it soon.
 
 In the context of Zero Trust, it's often said, "It's turtles all the way down," meaning that one layer of security
 depends on another, creating a seemingly never-ending loop. SPIRE helps you find the "bottom turtle" — the foundational
@@ -253,16 +210,16 @@ is not feasible. For the purposes of this demo, the join token serves as this fo
 attest to the SPIRE server, initiating a trusted relationship without needing another secret.
 
 *Note: The provided `spiffeID` aligns with the Coastal Container organization's URI structure. For more on SPIFFE IDs,
-consult [SPIFFE Concepts](https://spiffe.io/docs/latest/spiffe-about/spiffe-concepts/#spiffe-id) within the official docs.*
+consult [SPIFFE Concepts](https://spiffe.io/docs/latest/spiffe-about/spiffe-concepts/#spiffe-id) within the official 
+docs.*
 
 ### Step 6: Start the SPIRE Agent
 
 Having the join token in hand, you can now start the SPIRE Agent. The agent interacts with the SPIRE Server, receives
-SVIDs, and provides them to workloads. Use the join token by passing in the copied `<token_string>` to start the SPIRE
-Agent.
+SVIDs, and provides them to workloads. Use the join token when starting the SPIRE Agent.
 
 ```bash
-bin/spire-agent run -config conf/agent/agent.conf -joinToken <your_join_token> &
+spire-agent run -config config/agent/agent.conf -joinToken $JOIN_TOKEN &
 ```
 
 #### Output Log Insights
@@ -278,7 +235,7 @@ Once the output log has finished, hit enter, and run the following command to ve
 healthy.
 
 ```bash
-bin/spire-agent healthcheck
+spire-agent healthcheck
 ```
 
 If everything is working and the SPIRE Agent has started properly, you should see the following:
@@ -299,13 +256,15 @@ workload.
 This process requires the `unix` workload attestor configured within the `agent.conf` file.
 
 ```bash
-bin/spire-server entry create -parentID spiffe://coastal-containers.example/spire-agent \
-    -spiffeID spiffe://coastal-containers.example/captain-workload -selector unix:uid:$(id -u)
+spire-server entry create \
+  -parentID spiffe://coastal-containers.example/spire-agent \
+  -spiffeID spiffe://coastal-containers.example/captain-workload \
+  -selector unix:uid:$(id -u)
 ```
 
 If you would like to register a different workload, you can do so by updating the `selector` field(s) and configuring
-the `NodeAttestor` plugin. More information on how to do this can be found in the [Registering workloads](https://spiffe.io/docs/latest/deploying/registering/) section
-of the official SPIFFE docs.
+the `NodeAttestor` plugin. More information on how to do this can be found in the 
+[Registering workloads](https://spiffe.io/docs/latest/deploying/registering/) section of the official SPIFFE docs.
 
 ### Step 8: Retrieve SVID Details
 
@@ -313,10 +272,10 @@ To retrieve and view the details of the SVID you just created, you can use the f
 that a workload would normally take to fetch an X.509-SVID from the SPIRE Agent.
 
 ```bash
-bin/spire-agent api fetch x509 -write /tmp/
+spire-agent api fetch x509 -write /tmp/
 ```
 
-This will retrieve the X.509-SVID and write it to the `/tmp/` temporary directory so you can view it.
+This will retrieve the X.509-SVID and write it to the `/tmp/` temporary directory, so you can view it.
 
 ### Step 9: Inspect the SVID
 
@@ -327,28 +286,19 @@ contents.
 openssl x509 -in /tmp/svid.0.pem -text -noout
 ```
 
-Compare the created X.509-SVID certificate to the one you generated in the [initial PKI lab](../lab-01-pki-basics/). Take note of the
-SPIFFE ID in the URI SAN and the format of the Subject field. This is a key part of how SPIRE manages identities. In the
-SPIFFE ecosystem, an X.509-SVID must contain exactly one URI (SPIFFE ID) in the Subject Alternative Name (SAN)
-extension, as opposed to the initial X.509 Cert, which relies on geographical and organizational information in the
-Subject field to establish identity.
+Compare the created X.509-SVID certificate to the one you generated in the 
+[initial PKI lab](../lab-01-pki-basics). Take note of the SPIFFE ID in the URI SAN and the format of the Subject field. 
+This is a key part of how SPIRE manages identities. In the SPIFFE ecosystem, an X.509-SVID must contain exactly one URI 
+(SPIFFE ID) in the Subject Alternative Name (SAN) extension, as opposed to the initial X.509 Cert, which relies on 
+geographical and organizational information in the Subject field to establish identity.
 
 ### Step 10: Clean Up
 
-To restore the lab directory to its original state, first change to the `$LAB_DIR` directory, and then perform the
-following steps:
-
-1. Kill the SPIRE Server and Agent processes.
+Kill the SPIRE Server and Agent processes and remove the data directory.
 
 ```bash
 killall spire-agent spire-server
-```
-
-1. Delete any downloaded or generated files.
-
-```bash
-cd $LAB_DIR
-rm -rf spire-1.8.0
+rm -rf data
 ```
 
 ## Key Configuration Details
@@ -408,7 +358,8 @@ server_port = 9090
 
 In this lab, you're using a join token as the method of node attestation. This is a simple yet powerful way to establish
 initial trust between the SPIRE Server and Agent. More information about node attestation and the various node attestor
-plugins can be found [here](https://spiffe.io/docs/latest/spire-about/spire-concepts/#node-attestation) within the official SPIFFE docs.
+plugins can be found [here](https://spiffe.io/docs/latest/spire-about/spire-concepts/#node-attestation) within the 
+official SPIFFE docs.
 
 In `server.conf` and `agent.conf`:
 
@@ -544,8 +495,8 @@ sensitive information in the logs.
 
 **Recommended Action**: Consider using log levels like `INFO` or `WARN` for production.
 
-More information about this configuration can be found within the [Configuring SPIRE](https://spiffe.io/docs/latest/deploying/configuring/) section of the official
-SPIFFE docs.
+More information about this configuration can be found within the 
+[Configuring SPIRE](https://spiffe.io/docs/latest/deploying/configuring/) section of the official SPIFFE docs.
 
 ## Conclusion
 
@@ -554,5 +505,6 @@ Captain Hashjack and his band of cyber-pirates to infiltrate our systems. You've
 gained a deeper understanding of its inner workings. This is essential knowledge as you continue our Zero Trust voyage.
 
 For those eager to continue sailing through uncharted waters, there are more advanced configurations and deployment
-strategies to explore. You can dive into more advanced [SPIRE deployment examples and configurations](https://github.com/spiffe/spire-examples). Fair winds
-and following seas, sailor!
+strategies to explore. You can dive into more advanced 
+[SPIRE deployment examples and configurations](https://github.com/spiffe/spire-examples). Fair winds and following seas, 
+sailor!

@@ -1,5 +1,8 @@
-FROM ghcr.io/spiffe/spiffe-helper:nightly as HELPER
-FROM python:3.9-slim
+ARG SPIFFE_HELPER_IMAGE
+ARG PYTHON_IMAGE
+
+FROM $SPIFFE_HELPER_IMAGE as HELPER
+FROM $PYTHON_IMAGE
 
 USER root
 

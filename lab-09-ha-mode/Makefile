@@ -8,31 +8,32 @@ help: ## Display this help.
 
 include ../tools/Makefile
 
-##@ Lab
+.PHONY: platform-images
+platform-images: ## Load component images into the cluster
+	@$(MAKE) cluster-load-image IMG=$(POSTGRES_IMAGE_TAG)
+	@$(MAKE) cluster-load-image IMG=$(SPIRE_SERVER_IMAGE_TAG)
+	@$(MAKE) cluster-load-image IMG=$(SPIRE_AGENT_IMAGE_TAG)
+	@$(MAKE) cluster-load-image IMG=$(WAIT_FOR_IT_IMAGE_TAG)
+	@$(MAKE) cluster-load-image IMG=$(SPIFFE_CSI_DRIVER_IMAGE_TAG)
+	@$(MAKE) cluster-load-image IMG=$(SPIRE_CONTROLLER_MANAGER_IMAGE_TAG)
+	@$(MAKE) cluster-load-image IMG=$(SPIRE_OIDC_DISCOVERY_PROVIDER_IMAGE_TAG)
+	@$(MAKE) cluster-load-image IMG=$(CSI_NODE_DRIVER_REGISTRAR_IMAGE_TAG)
 
 .PHONY: deploy-postgres
 deploy-postgres: kubectl ## Deploy the postgres instance
-	$(KUBECTL) apply -f config/spire-db.yaml
-
-.PHONY: delete-postgres
-delete-postgres: kubectl ## Delete the postgres instance
-	$(KUBECTL) delete -f config/spire-db.yaml
+	$(KUBECTL) apply -f spire-database/database.yaml
 
 .PHONY: deploy-fleets
 deploy-fleets: kubectl ## Deploy the fleet workloads
 	@echo "🛥 Deploying tugboat fleet alpha..."
-	$(KUBECTL) apply -f config/deploy-alpha.yaml
+	$(KUBECTL) apply -f workload/deploy-alpha.yaml
 	@echo "✔️ Tugboat fleet alpha deployed."
 	@echo "🛥 Deploying tugboat fleet beta..."
-	$(KUBECTL) apply -f config/deploy-beta.yaml
+	$(KUBECTL) apply -f workload/deploy-beta.yaml
 	@echo "✔️ Tugboat fleet beta deployed."
 
-.PHONY: tear-down
-tear-down: kubectl ## Tear down tugboat fleet deployments
-	@echo "🚧 Deleting Postgres on the cluster..."
-	$(KUBECTL) delete -f config/spire-db.yaml
-	@echo "❌ Postgres deleted on the cluster."
-	@echo "🛥 Decomissioning tugboat fleets..."
-	$(KUBECTL) delete -f config/deploy-alpha.yaml
-	$(KUBECTL) delete -f config/deploy-beta.yaml
-	@echo "❌ Tugboat fleets decomissioned, fair winds and following seas on yer voyage ! ⚓"
+##@ Infrastructure
+
+.PHONY: cluster-up
+cluster-up:: ## Launch a Kind cluster with Cert Manager and Contour ingress
+	$(MAKE) platform-images

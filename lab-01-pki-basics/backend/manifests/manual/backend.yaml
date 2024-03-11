@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: manual
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend-app
+          image: backend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8443
+          volumeMounts:
+            - mountPath: "/certs"
+              name: backend
+              readOnly: true
+      volumes:
+        - name: backend
+          secret:
+            secretName: backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: manual
+spec:
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 443
+      targetPort: 8443

@@ -40,17 +40,6 @@ graph TD
 classDef workloadClass stroke-dasharray: 5 5;
 ```
 
-### Preparing Your Environment
-
-Before you cast off, prepare your ship to sail by setting up your working environment. If you haven't yet done so, make
-sure you've cloned the lab repository to your local system. After that, you'll be working from the
-[lab-10-nested-spire](../lab-10-nested-spire) directory.
-
-```bash
-export LAB_DIR=$(pwd)
-export PATH=$PATH:$(pwd)/../bin
-```
-
 ## Step-by-Step Instructions
 
 ### Step 1: Boot the Kubernetes clusters
@@ -67,7 +56,7 @@ So first be sure to tear down any existing kind clusters before this step.
 make clusters-up
 ```
 
-Check all of the clusters are running correct with the following command
+Check all the clusters are running correct with the following command
 
 ```shell
 for i in coastal-containers cargo-clipper tidal-transporter
@@ -229,7 +218,7 @@ exchange ship manifests and establish mutual trust with the help of the `spiffe-
 Now that you've proved everything works, its time to scrub the decks and delete your clusters:
 
 ```shell
-cd $LAB_DIR && make clusters-down
+make clusters-down
 ```
 
 ## Conclusion
