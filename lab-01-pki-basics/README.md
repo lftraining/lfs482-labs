@@ -270,7 +270,7 @@ kubectl create secret generic backend -n manual \
 
 Now that you have key material, certificates and certificate chains available in Kubernetes secrets within the `manual`
 namespace, you can make this information available to your frontend container via a `volumeMount` as in the following
-lines from the [frontend deployment](manifests/frontend.yaml):
+lines from the [frontend deployment](frontend/manifests/manual/frontend.yaml):
 
 ```yaml
 containers:
