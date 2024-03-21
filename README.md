@@ -75,7 +75,7 @@ So get ready to set sail with Coastal Containers on this Zero Trust Voyage!
 
 ## Labs
 
-### Lab - [Setup](lab-00-setup/README.md)
+### Lab 0 - [Setup](lab-00-setup/README.md)
 
 - **Purpose**: Download the required binaries and container images for the following labs.
 
