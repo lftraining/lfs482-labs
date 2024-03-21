@@ -116,7 +116,7 @@ with a matching SPIFFE ID (`clientID`).
 
 - The `spiffetls.Listen` function uses the `SPIFFE_ENDPOINT_SOCKET` environment variable to locate the Workload API
 address, obtaining the SVIDs needed for establishing secure communication. This environment variable is set within the
-[deploy-server.yaml](spire-server/deploy-server.yaml) manifest.
+[deploy-server.yaml](spire-server/server.yaml) manifest.
 
 📝Note: Detailed explanations about the underlying logic are provided in the
 [go-spiffe tls example](https://github.com/spiffe/go-spiffe/tree/main/v2/examples/spiffe-tls) and can be found within

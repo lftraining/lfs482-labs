@@ -56,7 +56,7 @@ Finally, the [server](spire-server/server.yaml) is deployed as a StatefulSet wit
 The key updates to the agent configuration, compares to the previous lab, are:
 
 - [k8s_psat NodeAttestor](https://github.com/spiffe/spire/blob/v1.9.0/doc/plugin_agent_nodeattestor_k8s_psat.md)
-- [k8s WorkloadAttestor](https://github.com/spiffe/spire/blob/v1.9.0/doc/plugin_agent_workloadattestor_k8s.mdq)
+- [k8s WorkloadAttestor](https://github.com/spiffe/spire/blob/v1.9.0/doc/plugin_agent_workloadattestor_k8s.md)
 
 The server and agent need paired Node Attestors, in this case `k8s_psat`. The agent is also configured to the `k8s`
 Workload Attestor, and requires [these RBAC permissions](spire-agent/rbac.yaml).
@@ -89,7 +89,7 @@ Wait until the agent is ready:
 make spire-wait-for-agent
 ```
 
-### Step 10: View Logs
+### Step 6: View Logs
 
 You can view logs for the server and agent using the make commands:
 
@@ -122,7 +122,7 @@ and the issuance of SPIFFE Verifiable Identity Documents (SVIDs).
 - **Agent Logs**: The agent logs shed light on the attestation process, where the agent proves its identity to the
 server, and the subsequent retrieval & renewal of SVIDs for workloads.
 
-### Step 11: Create Node Registration Entry
+### Step 7: Create Node Registration Entry
 
 Create a node registration entry:
 
@@ -140,7 +140,7 @@ within the SPIRE infrastructure.
 
 Take note of the output after registration, as it provides intricate details about the newly minted SVID.
 
-### Step 12: Cleanup
+### Step 8: Cleanup
 
 To tear down the entire Kind cluster, run:
 
