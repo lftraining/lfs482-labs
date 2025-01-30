@@ -207,7 +207,7 @@ In the context of Zero Trust, it's often said, "It's turtles all the way down," 
 depends on another, creating a seemingly never-ending loop. SPIRE helps you find the "bottom turtle" — the foundational
 secret that breaks this loop. This is particularly important in dynamic ecosystems where manual provisioning of secrets
 is not feasible. For the purposes of this demo, the join token serves as this foundational secret for the SPIRE agent to
-attest to the SPIRE server, initiating a trusted relationship without needing another secret.
+attest to the SPIRE server.
 
 *Note: The provided `spiffeID` aligns with the Coastal Container organization's URI structure. For more on SPIFFE IDs,
 consult [SPIFFE Concepts](https://spiffe.io/docs/latest/spiffe-about/spiffe-concepts/#spiffe-id) within the official 

@@ -126,24 +126,7 @@ Next, view the running `spire-agent` configuration by issuing:
 make spire-view-agent-config
 ```
 
-```json
-{
-  "plugins": {
-    "KeyManager": [
-      {
-        "disk": {
-          "plugin_data": {
-            "keys_path": "/run/spire/data/keys.json"
-          }
-        }
-      }
-    ]
-  }
-}
-```
-
-- The Helm chart defaults to using the
-  [disk KeyManager](https://github.com/spiffe/spire/blob/v1.9.0/doc/plugin_agent_keymanager_disk.md)
+Note that the Helm chart defaults to using the [memory KeyManager](https://github.com/spiffe/spire/blob/v1.9.0/doc/plugin_server_keymanager_memory.md)
 
 The rest of the configuration should look familiar.
 

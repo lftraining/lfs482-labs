@@ -1,85 +1,85 @@
-CFSSL_VERSION ?= 1.6.4
-HELM_VERSION ?= 3.12.3
-ISTIO_VERSION ?= 1.19.0
-KIND_VERSION ?= 0.20.0
-KUBECTL_VERSION ?= 1.28.2
-OPA_VERSION ?= 0.56.0
-SPIRE_VERSION ?= 1.8.7
-CILIUM_CLI_VERSION ?= v0.15.8
-HUBBLE_CLI_VERSION ?= v0.12.0
+CFSSL_VERSION ?= 1.6.5
+HELM_VERSION ?= 3.17.0
+ISTIO_VERSION ?= 1.22.8
+KIND_VERSION ?= 0.26.0
+KUBECTL_VERSION ?= 1.32.0
+OPA_VERSION ?= 1.1.0
+SPIRE_VERSION ?= 1.11.1
+CILIUM_CLI_VERSION ?= v0.16.23
+HUBBLE_CLI_VERSION ?= v1.16.6
 
-KIND_IMAGE ?= kindest/node:v1.27.3@sha256:3966ac761ae0136263ffdb6cfd4db23ef8a83cba8a463690e98317add2c9ba72
+KIND_IMAGE ?= kindest/node:v1.32.0@sha256:c48c62eac5da28cdadcf560d1d8616cfa6783b58f0d94cf63ad1bf49600cb027
 
 GOLANG_BUILDER_IMAGE ?= golang:1.21.7-alpine3.19@sha256:163801a964d358d6450aeb51b59d5c807d43a7c97fed92cc7ff1be5bd72811ab
 GOLANG_IMAGE ?= gcr.io/distroless/base-debian12@sha256:5eae9ef0b97acf7de819f936e12b24976b2d54333a2cf329615366e16ba598cd
 PYTHON_IMAGE ?= gcr.io/distroless/python3-debian12@sha256:d1427d962660c43d476b11f9bb7d6df66001296bba9577e39b33d2e8897614cd
 
-CONTOUR_IMAGE ?= ghcr.io/projectcontour/contour:v1.26.2@sha256:96647f464335ad930d97f9e16b5701440ea1fdce2455aee6f3747b0236deceee
+CONTOUR_IMAGE ?= ghcr.io/projectcontour/contour:v1.30.2@sha256:ba4fd19911bd603e3857fafdd17bd44c687ea1ab52b12f8ddc7971ba68f9b532
 CONTOUR_IMAGE_TAG = projectcontour/contour:latest
 
-ENVOY_IMAGE ?= docker.io/envoyproxy/envoy:v1.27.3@sha256:72ca37b8da6575c5032a26ce58fbf82827dbc2ad2fd670171b05cf61e9dc4a32
+ENVOY_IMAGE ?= docker.io/envoyproxy/envoy:v1.31.5@sha256:2ef22f7a72d3008d68bd4912f52b9a3d466d00db31a567dffa1b103e42eb9198
 ENVOY_IMAGE_TAG = envoyproxy/envoy:latest
 
-CERT_MANAGER_CAINJECTOR_IMAGE ?= quay.io/jetstack/cert-manager-cainjector:v1.13.0@sha256:cb3c638088ef4308a67973bc48dbd6f25ae6c39e5157315c89fb6010fac40fd6
+CERT_MANAGER_CAINJECTOR_IMAGE ?= quay.io/jetstack/cert-manager-cainjector:v1.16.3@sha256:e25e5f62648966d9c442c38ef3004efb60072069d91cf6f1a9a480c16550d09e
 CERT_MANAGER_CAINJECTOR_IMAGE_TAG = jetstack/cert-manager-cainjector:latest
-CERT_MANAGER_CONTROLLER_IMAGE ?= quay.io/jetstack/cert-manager-controller:v1.13.0@sha256:2547fde4e736101abf33f8c2503f12aa3a0b42614d3d64cfecf2835c0ee81c10
+CERT_MANAGER_CONTROLLER_IMAGE ?= quay.io/jetstack/cert-manager-controller:v1.16.3@sha256:17c8f2d46fd16087c9ee92688304b3e38b32cbcb1f5885412e5a35e8852bc029
 CERT_MANAGER_CONTROLLER_IMAGE_TAG = jetstack/cert-manager-controller:latest
-CERT_MANAGER_WEBHOOK_IMAGE ?= quay.io/jetstack/cert-manager-webhook:v1.13.0@sha256:f8cd7c856c85795291319c94bd73dc88f195da26e1dc6f62dbae10887f5a1c8c
+CERT_MANAGER_WEBHOOK_IMAGE ?= quay.io/jetstack/cert-manager-webhook:v1.16.3@sha256:0eb32021bf2f30d923c439fd79b1b2fd3d8cf877e3c915f8a34c12803138a145
 CERT_MANAGER_WEBHOOK_IMAGE_TAG = jetstack/cert-manager-webhook:latest
-CERT_MANAGER_ACMESOLVER_IMAGE ?= quay.io/jetstack/cert-manager-acmesolver:v1.13.0@sha256:f4dea02438c66786bae8cb9c4f8d0f429c54ebee707e3394db69bbc95ea581a1
+CERT_MANAGER_ACMESOLVER_IMAGE ?= quay.io/jetstack/cert-manager-acmesolver:v1.16.3@sha256:aa603e03e22897ab65a799126b854863ab717538ee46e36df42ed26f74a2ec7f
 
 WAIT_FOR_IT_IMAGE ?= cgr.dev/chainguard/wait-for-it:latest@sha256:caead414307e81dbdd86d30662fdfe1b999dd4ce8a10fa667dab3438d0eed193
 WAIT_FOR_IT_IMAGE_TAG = chainguard/wait-for-it:latest
 
-SPIRE_SERVER_IMAGE ?= ghcr.io/spiffe/spire-server:1.8.7@sha256:ce3d81259b090eb1863d9f3caa106ecca418b19832d7e876abbe9be57cb4f0e7
+SPIRE_SERVER_IMAGE ?= ghcr.io/spiffe/spire-server:1.11.1@sha256:f48d3d766d862de9e7232544737be0aa9d2ece600567fdcaf6439167ca9cef5f
 SPIRE_SERVER_IMAGE_TAG = spiffe/spire-server:latest
-SPIRE_AGENT_IMAGE ?= ghcr.io/spiffe/spire-agent:1.8.7@sha256:dc83e448e1ce8a6c37b9989679426deae409f0a159257f014797698648c4486e
+SPIRE_AGENT_IMAGE ?= ghcr.io/spiffe/spire-agent:1.11.1@sha256:3468d6c06da4a36c2b85f61c116935cc32dfdeec669ee7b09ad4f49566cea881
 SPIRE_AGENT_IMAGE_TAG = spiffe/spire-agent:latest
-SPIRE_CONTROLLER_MANAGER_IMAGE ?= ghcr.io/spiffe/spire-controller-manager:0.4.3@sha256:740a46d91e182b98b9fd881427b9cb4fa47c29270a572342f21aebcdae7bef83
+SPIRE_CONTROLLER_MANAGER_IMAGE ?= ghcr.io/spiffe/spire-controller-manager:0.6.0@sha256:1a6876c5c66d836a1697492f431e1ff4e52e4a6d61200574535af33e72b1668b
 SPIRE_CONTROLLER_MANAGER_IMAGE_TAG = spiffe/spire-controller-manager:latest
-SPIRE_OIDC_DISCOVERY_PROVIDER_IMAGE ?= ghcr.io/spiffe/oidc-discovery-provider:1.9.1@sha256:eb4a6bc3a747cee6e3d7bbb04f5795df6d0664064fe38b3a1c0dc0d937dd273a
+SPIRE_OIDC_DISCOVERY_PROVIDER_IMAGE ?= ghcr.io/spiffe/oidc-discovery-provider:1.11.1@sha256:4d273da48fb48a14b2105688378f365466beb902260817f5ae7df65e3e9c95ac
 SPIRE_OIDC_DISCOVERY_PROVIDER_IMAGE_TAG = spiffe/oidc-discovery-provider:latest
 
-SPIFFE_CSI_DRIVER_IMAGE ?= ghcr.io/spiffe/spiffe-csi-driver:nightly@sha256:9f300d23f2d04b55e2e5705a473307211df3a139f0ae5579a0dc939a58a78bc2
+SPIFFE_CSI_DRIVER_IMAGE ?= ghcr.io/spiffe/spiffe-csi-driver:nightly@sha256:7cd432061281da00273c2c5612e3b8fc44abd0aba7c8175bdfcf200fba6ed131
 SPIFFE_CSI_DRIVER_IMAGE_TAG = spiffe/spiffe-csi-driver:latest
-SPIFFE_HELPER_IMAGE ?= ghcr.io/spiffe/spiffe-helper:nightly@sha256:baeb815b14f9217105e0e00fcb4d2ded7ccf06c37230860a40c7a26a8865e558
+SPIFFE_HELPER_IMAGE ?= ghcr.io/spiffe/spiffe-helper:0.9.0@sha256:47f18fcd2bf1c99cbb9bdc6f4348b08fb74572f89ddd0bcf103de2a1b12ab6d9
 SPIFFE_HELPER_IMAGE_TAG = spiffe/spiffe-helper:latest
 
-CSI_NODE_DRIVER_REGISTRAR_IMAGE ?=  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.6.0@sha256:f1c25991bac2fbb7f5fcf91ed9438df31e30edee6bed5a780464238aa09ad24c
+CSI_NODE_DRIVER_REGISTRAR_IMAGE ?=  registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.9.4@sha256:ab6c4603d8da43d9f33361a5716552080e3f72badfad099d76fcf4b59e547d80
 CSI_NODE_DRIVER_REGISTRAR_IMAGE_TAG = sig-storage/csi-node-driver-registrar:latest
 
-OPA_IMAGE ?= openpolicyagent/opa:0.57.0@sha256:fa730b2c457396e5ea55ac79e34bc24e5d24476acae31cfa21f688b32ce8f753
+OPA_IMAGE ?= openpolicyagent/opa:1.1.0@sha256:8433ff5fd7919a85f97b013358425a0ed169989ae38f8a5ff80fe1790cba7725
 OPA_IMAGE_TAG = openpolicyagent/opa:latest
 OPA_PROXY_INIT_IMAGE ?= openpolicyagent/proxy_init:v8@sha256:1a867cf60ebf79e7ce2b40abca679ad6833901e5b7bd02e581a3538c7c3c2f51
 OPA_PROXY_INIT_IMAGE_TAG = openpolicyagent/proxy_init:latest
-OPA_ENVOY_IMAGE ?= openpolicyagent/opa:0.57.0-envoy@sha256:17ddd114d5277d6ddf1b402e5c3181ace6326abf6cb57724a585ff3b3551cee5
+OPA_ENVOY_IMAGE ?= openpolicyagent/opa:1.1.0-envoy@sha256:3be6adc37c08ca5fe867dc70d4872e06688677752aa0a8996b14edba4e9c534d
 OPA_ENVOY_IMAGE_TAG = openpolicyagent/opa-envoy:latest
 
-POSTGRES_IMAGE ?= postgres:16@sha256:f58300ac8d393b2e3b09d36ea12d7d24ee9440440e421472a300e929ddb63460
+POSTGRES_IMAGE ?= postgres:17.2@sha256:87ec5e0a167dc7d4831729f9e1d2ee7b8597dcc49ccd9e43cc5f89e808d2adae
 POSTGRES_IMAGE_TAG = postgres:latest
 
-ALPINE_CURL_IMAGE ?= alpine/curl:latest@sha256:4e8ea6966522ee1e02e6ebd9c4f94af5ff202a5a9fd3fd3eee807055eaad2471
+ALPINE_CURL_IMAGE ?= alpine/curl:latest@sha256:31f1d54c59fb1bf1b4381b13cbce89bc22449008a664987c468d103699af8c47
 ALPINE_CURL_IMAGE_TAG = alpine/curl:latest
 
 NETWORK_MULTITOOL_IMAGE ?= wbitt/network-multitool:latest@sha256:d1137e87af76ee15cd0b3d4c7e2fcd111ffbd510ccd0af076fc98dddfc50a735
 NETWORK_MULTITOOL_IMAGE_TAG = wbitt/network-multitool:latest
 
-BUSYBOX_IMAGE ?= busybox:latest@sha256:650fd573e056b679a5110a70aabeb01e26b76e545ec4b9c70a9523f2dfaf18c6
+BUSYBOX_IMAGE ?= busybox:latest@sha256:a5d0ce49aa801d475da48f8cb163c354ab95cab073cd3c138bd458fc8257fbf1
 BUSYBOX_IMAGE_TAG = busybox:latest
 
-CILIUM_IMAGE ?= quay.io/cilium/cilium:v1.14.2@sha256:6263f3a3d5d63b267b538298dbeb5ae87da3efacf09a2c620446c873ba807d35
+CILIUM_IMAGE ?= quay.io/cilium/cilium:v1.16.6@sha256:cf64df62897b071d5a9a005564ecbfb9124aa82a96957e329ce28a187864f113
 CILIUM_IMAGE_TAG = cilium/cilium:latest
-CILIUM_OPERATOR_IMAGE ?= quay.io/cilium/operator-generic:v1.14.2@sha256:52f70250dea22e506959439a7c4ea31b10fe8375db62f5c27ab746e3a2af866d
+CILIUM_OPERATOR_IMAGE ?= quay.io/cilium/operator-generic:v1.16.6@sha256:5f8a26797f32f7646850047dbd3d7d252d9bf949c3add428b48e8d4e3dbc9400
 CILIUM_OPERATOR_IMAGE_TAG = cilium/operator-generic:latest
-CILIUM_CURL_IMAGE ?= quay.io/cilium/alpine-curl:v1.7.0@sha256:ccd0ed9da1752bab88a807647ad3cec65d460d281ab88988b60d70148783e751
+CILIUM_CURL_IMAGE ?= quay.io/cilium/alpine-curl:v1.10.0@sha256:9c2638849cab7c7bb8f6f2175bacc7f728d4f11c08e562d1f9c5e3bac1ee8d9f
 CILIUM_CURL_IMAGE_TAG = cilium/alpine-curl:latest
-CILIUM_JSON_MOCK_IMAGE ?= quay.io/cilium/json-mock:v1.3.5@sha256:d5dfd0044540cbe01ad6a1932cfb1913587f93cac4f145471ca04777f26342a4
+CILIUM_JSON_MOCK_IMAGE ?= quay.io/cilium/json-mock:v1.3.8@sha256:2b2968790f9d7dbdf3be84c6283da0204675e3baa635a57c659ac73ee43ae3c8
 CILIUM_JSON_MOCK_IMAGE_TAG = cilium/json-mock:latest
-HUBBLE_RELAY_IMAGE ?= quay.io/cilium/hubble-relay:v1.14.2@sha256:a89030b31f333e8fb1c10d2473250399a1a537c27d022cd8becc1a65d1bef1d6
+HUBBLE_RELAY_IMAGE ?= quay.io/cilium/hubble-relay:v1.16.6@sha256:eb6b6e5f128484122974385c46d0e5aae820d628ab564684231a16e25e0e0a59
 HUBBLE_RELAY_IMAGE_TAG = cilium/hubble-relay:latest
-HUBBLE_UI_IMAGE ?= quay.io/cilium/hubble-ui:v0.12.0@sha256:1c876cfa1d5e35bc91e1025c9314f922041592a88b03313c22c1f97a5d2ba88f
+HUBBLE_UI_IMAGE ?= quay.io/cilium/hubble-ui:v0.13.1@sha256:306c8accedc8eb0dd31b128ce71767d8ff16d7623605e2559217ac563b8e17da
 HUBBLE_UI_IMAGE_TAG = cilium/hubble-ui:latest
-HUBBLE_UI_BACKEND_IMAGE ?= quay.io/cilium/hubble-ui-backend:v0.12.0@sha256:8a79a1aad4fc9c2aa2b3e4379af0af872a89fcec9d99e117188190671c66fc2e
+HUBBLE_UI_BACKEND_IMAGE ?= quay.io/cilium/hubble-ui-backend:v0.13.1@sha256:c7766e572e407f98b3790c26c6f1a3a2fcf91b172b097a426b91d60d9f3d7e89
 HUBBLE_UI_BACKEND_IMAGE_TAG = cilium/hubble-ui-backend:latest
 
 BIN_DIR ?= bin

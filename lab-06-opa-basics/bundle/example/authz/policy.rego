@@ -4,12 +4,12 @@ import input.bearer
 
 default allow := false
 
-allow {
+allow if {
     token_is_valid
     role_is_supervisor
 }
 
-allow {
+allow if {
     token_is_valid
     role_is_captain
     vessel_is_assigned
@@ -26,23 +26,23 @@ jwks := {
     }]
 }
 
-token_payload := payload {
+token_payload := payload if {
     [header, payload, signature] := io.jwt.decode(bearer)
 }
 
-token_is_valid := valid {
+token_is_valid := valid if {
     [valid, header, payload] := io.jwt.decode_verify(bearer, {"cert": json.marshal(jwks), "aud": "port-records"})
 }
 
-role_is_supervisor {
+role_is_supervisor if {
 	token_payload.is_supervisor == true
 }
 
-role_is_captain {
+role_is_captain if {
     token_payload.sub == "ship_captain"
 }
 
-vessel_is_assigned {
+vessel_is_assigned if {
 	role := token_payload.sub
     some i
     vessel := data.port_data.roles[role].vessels[i]

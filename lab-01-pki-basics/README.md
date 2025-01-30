@@ -46,7 +46,8 @@ mkdir certs
 Generate the certificate for your self-signed root CA:
 
 ```shell
-cfssl gencert -initca pki-config/root.json | cfssljson -bare certs/root```
+cfssl gencert -initca pki-config/root.json | cfssljson -bare certs/root
+```
 
 After you issue this `cfssl` command, you should see output similar to:
 

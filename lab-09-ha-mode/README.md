@@ -137,10 +137,10 @@ global:
     trustDomain: coastal-containers.example
 spire-server:
   replicaCount: 3
-  ca_subject:
+  caSubject:
     country: UK
     organization: CoastalContainers
-    common_name: Coastal Containers Ltd
+    commonName: Coastal Containers Ltd
   controllerManager:
     enabled: true
     image:

@@ -4,10 +4,10 @@ global:
     jwtIssuer: 127.0.0.1.nip.io
     trustDomain: coastal-containers.example
 spire-server:
-  ca_subject:
+  caSubject:
     country: UK
     organization: CoastalContainers
-    common_name: Coastal Containers Ltd
+    commonName: Coastal Containers Ltd
   controllerManager:
     enabled: true
     image:

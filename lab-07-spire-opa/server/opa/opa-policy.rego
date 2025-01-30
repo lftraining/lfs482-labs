@@ -5,7 +5,7 @@ import input.attributes.source.principal as source_svid
 
 default allow := false
 
-allow {
+allow if {
     http_request.method == "GET"
     source_svid == "spiffe://coastal-containers.example/app/manifest/pilot-boat-0"
 }
